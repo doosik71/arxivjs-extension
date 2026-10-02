@@ -12,3 +12,4 @@ vitest.config.mts
 .vscode-test.mjs
 tsconfig.json
 DEV-PLAN.md
+.gitignore

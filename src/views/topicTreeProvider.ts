@@ -35,6 +35,7 @@ export type TreeNode = TopicNode | PaperNode | MessageNode;
 
 export const TOPIC_CONTEXT = 'arxivjs.topic';
 export const PAPER_CONTEXT = 'arxivjs.paper';
+export const OPEN_PAPER_COMMAND = 'arxivjs.openPaper';
 
 export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vscode.Disposable {
   private readonly changeEmitter = new vscode.EventEmitter<TreeNode | undefined>();
@@ -79,6 +80,14 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
     this.changeEmitter.fire(this.topicNodes.get(topicId));
   }
 
+  /** 캐시는 그대로 두고 주제 하나를 다시 그린다 (논문 하나를 reload한 뒤). */
+  refreshTopic(topicId: string): void {
+    const node = this.topicNodes.get(topicId);
+    if (node) {
+      this.changeEmitter.fire(node);
+    }
+  }
+
   getTopicNode(topicId: string): TopicNode | undefined {
     return this.topicNodes.get(topicId);
   }
@@ -99,7 +108,7 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
       case 'topic':
         return this.topicItem(node.topic);
       case 'paper':
-        return this.paperItem(node.paper);
+        return this.paperItem(node);
       case 'message': {
         const item = new vscode.TreeItem(node.text, vscode.TreeItemCollapsibleState.None);
         item.iconPath = new vscode.ThemeIcon(node.isError ? 'error' : 'info');
@@ -177,12 +186,14 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
     return item;
   }
 
-  private paperItem(paper: Paper): vscode.TreeItem {
+  private paperItem(node: PaperNode): vscode.TreeItem {
+    const { paper } = node;
     const item = new vscode.TreeItem(paper.meta.title, vscode.TreeItemCollapsibleState.None);
     item.id = `paper:${paper.id}`;
     item.description = paperDescription(paper);
     item.iconPath = new vscode.ThemeIcon(paper.metaError ? 'warning' : paper.mdPath ? 'markdown' : 'file');
     item.contextValue = paper.mdPath ? PAPER_CONTEXT : `${PAPER_CONTEXT}.noMarkdown`;
+    item.command = { command: OPEN_PAPER_COMMAND, title: '논문 열기', arguments: [node] };
     return item;
   }
 

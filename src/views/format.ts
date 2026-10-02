@@ -71,3 +71,10 @@ export function paperTooltipLines(paper: Paper): { title: string; lines: Tooltip
     abstract: meta.abstract ? ellipsize(meta.abstract, ABSTRACT_PREVIEW_CHARS) : undefined,
   };
 }
+
+/** "정보 복사" 텍스트: "Title. Authors (2019). URL" */
+export function citationText(paper: Paper): string {
+  const { title, authors, year, url } = paper.meta;
+  const who = [authors, year !== undefined ? `(${year})` : undefined].filter(Boolean).join(' ');
+  return [title, who, url].filter(Boolean).join('. ').replace(/\.\./g, '.');
+}

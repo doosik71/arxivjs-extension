@@ -110,6 +110,30 @@
         "title": "설정 열기",
         "category": "ArxivJS",
         "icon": "$(gear)"
+      },
+      {
+        "command": "arxivjs.openPaper",
+        "title": "논문 열기",
+        "category": "ArxivJS",
+        "icon": "$(book)"
+      },
+      {
+        "command": "arxivjs.reloadPaper",
+        "title": "Reload Paper",
+        "category": "ArxivJS",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "arxivjs.openExternal",
+        "title": "원문 URL 열기",
+        "category": "ArxivJS",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "arxivjs.copyCitationInfo",
+        "title": "논문 정보 복사",
+        "category": "ArxivJS",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -140,12 +164,36 @@
           "command": "arxivjs.reloadTopic",
           "when": "view == arxivjs.topics && viewItem == arxivjs.topic",
           "group": "navigation@1"
+        },
+        {
+          "command": "arxivjs.openExternal",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/",
+          "group": "inline"
+        },
+        {
+          "command": "arxivjs.openPaper",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "arxivjs.openExternal",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "arxivjs.copyCitationInfo",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/",
+          "group": "navigation@3"
         }
       ],
       "commandPalette": [
         {
           "command": "arxivjs.reloadTopic",
           "when": "false"
+        },
+        {
+          "command": "arxivjs.reloadPaper",
+          "when": "activeWebviewPanelId == 'arxivjs.paper'"
         }
       ]
     }
@@ -165,6 +213,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/markdown-it": "^14.2.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.5",
     "@types/vscode": "~1.90.0",
@@ -176,5 +225,10 @@
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@vscode/markdown-it-katex": "^1.1.2",
+    "katex": "^0.16.47",
+    "markdown-it": "^15.0.2"
   }
 }

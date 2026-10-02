@@ -78,6 +78,16 @@ export default tseslint.config(
     },
   },
   {
+    // webview 스크립트 (브라우저)
+    files: ['media/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: Object.fromEntries(
+        ['acquireVsCodeApi', 'window', 'document', 'Element', 'setTimeout', 'clearTimeout'].map((g) => [g, 'readonly']),
+      ),
+    },
+  },
+  {
     files: ['**/*.mjs', '**/*.mts'],
     languageOptions: { globals: { process: 'readonly', console: 'readonly' } },
   },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Paper, PaperMeta } from '../../src/data/models';
-import { formatCitation, paperDescription, paperTooltipLines, topicDescription, ellipsize } from '../../src/views/format';
+import { citationText, ellipsize, formatCitation, paperDescription, paperTooltipLines, topicDescription } from '../../src/views/format';
 
 const paper = (meta: Partial<PaperMeta>, extra: Partial<Paper> = {}): Paper => ({
   id: 'T/p',
@@ -72,5 +72,18 @@ describe('paperTooltipLines', () => {
     const t = paperTooltipLines(paper({}, { mdPath: undefined, metaError: 'Unexpected end' }));
     expect(t.lines.map((l) => l.text)).toEqual(['요약 문서(.md)가 없습니다.', '메타 정보를 읽지 못했습니다: Unexpected end']);
     expect(t.abstract).toBeUndefined();
+  });
+});
+
+describe('citationText', () => {
+  it('"제목. 저자 (연도). URL"', () => {
+    expect(citationText(paper({ title: 'A Closer Look', authors: 'W. Chen, J. Huang', year: 2019, url: 'http://arxiv.org/abs/1' }))).toBe(
+      'A Closer Look. W. Chen, J. Huang (2019). http://arxiv.org/abs/1',
+    );
+  });
+
+  it('없는 값은 생략한다', () => {
+    expect(citationText(paper({ title: 'T' }))).toBe('T');
+    expect(citationText(paper({ title: 'T', year: 2020 }))).toBe('T. (2020)');
   });
 });
