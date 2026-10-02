@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["node", "mocha"],
-    "rootDir": ".",
+    "rootDir": "../..",
     "outDir": "../../out/integration"
   },
   "include": ["./**/*.ts"]

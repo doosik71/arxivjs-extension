@@ -41,7 +41,18 @@
     "viewsWelcome": [
       {
         "view": "arxivjs.topics",
-        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 설정 열기](command:workbench.action.openSettings?%5B%22arxivjs.dataFolder%22%5D)"
+        "when": "arxivjs.state == noFolder",
+        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n선택한 경로는 설정 arxivjs.dataFolder에 저장됩니다. 이 확장은 데이터 폴더를 읽기만 합니다."
+      },
+      {
+        "view": "arxivjs.topics",
+        "when": "arxivjs.state == invalidFolder",
+        "contents": "데이터 폴더를 열 수 없습니다.\n설정 arxivjs.dataFolder가 존재하는 폴더의 절대 경로인지 확인하세요.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n[Reload](command:arxivjs.reload)"
+      },
+      {
+        "view": "arxivjs.topics",
+        "when": "arxivjs.state == empty",
+        "contents": "데이터 폴더에 주제 폴더가 없습니다.\n주제 폴더 이름은 영문자, 숫자, _, - 만 쓸 수 있습니다.\n[Reload](command:arxivjs.reload)\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)"
       }
     ],
     "configuration": {
@@ -74,6 +85,69 @@
           "description": "논문마다 새 탭을 연다. false이면 패널 하나를 재사용한다."
         }
       }
+    },
+    "commands": [
+      {
+        "command": "arxivjs.selectDataFolder",
+        "title": "데이터 폴더 선택",
+        "category": "ArxivJS",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "arxivjs.reload",
+        "title": "Reload",
+        "category": "ArxivJS",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "arxivjs.reloadTopic",
+        "title": "Reload Topic",
+        "category": "ArxivJS",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "arxivjs.openSettings",
+        "title": "설정 열기",
+        "category": "ArxivJS",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "arxivjs.reload",
+          "when": "view == arxivjs.topics",
+          "group": "navigation@1"
+        },
+        {
+          "command": "arxivjs.selectDataFolder",
+          "when": "view == arxivjs.topics",
+          "group": "navigation@2"
+        },
+        {
+          "command": "arxivjs.openSettings",
+          "when": "view == arxivjs.topics",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "arxivjs.reloadTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic",
+          "group": "inline"
+        },
+        {
+          "command": "arxivjs.reloadTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic",
+          "group": "navigation@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "arxivjs.reloadTopic",
+          "when": "false"
+        }
+      ]
     }
   },
   "scripts": {

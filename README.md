@@ -100,16 +100,19 @@ code --uninstall-extension <publisher>.arxivjs-viewer
 
 ```text
 ArxivJS (Activity Bar)
-└─ TOPICS                         [⟳ Reload] [⚙]
-   ▸ AI Healthcare        (34)
-   ▾ Few-Shot Learning    (87)    ← 펼치면 논문 목록
-      A Closer Look at ...   2019 · 2737
+└─ TOPICS                    [⟳ Reload] [📂 폴더 선택] [⚙ 설정]
+   ▸ AI Healthcare
+   ▾ Few-Shot Learning    (87)    ← 펼치면 논문 목록과 논문 수
+      A Closer Look at ...   2019 · 2,737
+      Domain-Agnostic ...    2019 · 1 · 문서 없음
       ...
 ```
 
 1. **주제 보기**: TOPICS 뷰에 데이터 폴더의 주제가 나타난다. 폴더 이름의 `_`는 공백으로 표시한다(`Few-Shot_Learning` → `Few-Shot Learning`).
 2. **논문 목록 보기**
-   - 주제를 펼치면 논문 목록이 나온다. 각 논문 옆에는 `연도 · 인용수`가 표시된다.
+   - 주제를 펼치면 논문 목록이 나온다. 각 논문 옆에는 `연도 · 인용수`가 표시된다. 요약 문서가 없는 논문에는 `문서 없음`이 붙는다.
+   - 논문에 마우스를 올리면 저자, 연도, 인용수, 출처, URL, 초록 앞부분이 툴팁으로 나온다.
+   - 메타 정보(json)를 읽지 못한 논문은 경고 아이콘으로 표시된다.
    - 주제를 클릭하면 **Topic 패널**이 열린다. 여기서 논문 표를 정렬하고 필터링할 수 있고, 초록을 펼쳐 볼 수 있다.
 3. **논문 읽기**
    - 논문을 클릭하면 **Paper 패널**이 열린다.
@@ -143,6 +146,7 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | --------------------------- | -------------------------------------------- |
 | `ArxivJS: 데이터 폴더 선택` | 데이터 폴더를 지정한다.                      |
 | `ArxivJS: Reload`           | 모든 데이터를 다시 읽는다.                   |
+| `ArxivJS: 설정 열기`        | 이 확장의 설정 화면을 연다.                  |
 | `ArxivJS: 주제 열기`        | 주제를 빠르게 검색해서 연다.                 |
 | `ArxivJS: 논문 열기`        | 현재 주제의 논문을 검색해서 연다.            |
 | `ArxivJS: 원문 URL 열기`    | 선택한 논문의 URL을 브라우저로 연다.         |

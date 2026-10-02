@@ -173,6 +173,7 @@ md만 있는 2건은 파일명이 base64로 인코딩된 URL이다(예: `aHR0cDo
 | `arxivjs.reload`           | ArxivJS: Reload (전체 다시 읽기)                          |
 | `arxivjs.reloadTopic`      | ArxivJS: Reload Topic (주제 노드 인라인 버튼, Topic 패널) |
 | `arxivjs.reloadPaper`      | ArxivJS: Reload Paper (Paper 패널)                        |
+| `arxivjs.openSettings`     | ArxivJS: 설정 열기 (TOPICS 제목줄 `[⚙]`)                  |
 | `arxivjs.openTopic`        | ArxivJS: 주제 열기 (QuickPick)                            |
 | `arxivjs.openPaper`        | ArxivJS: 논문 열기 (QuickPick, 현재 주제)                 |
 | `arxivjs.openExternal`     | ArxivJS: 원문 URL 열기                                    |
