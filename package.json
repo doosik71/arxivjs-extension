@@ -112,6 +112,12 @@
         "icon": "$(gear)"
       },
       {
+        "command": "arxivjs.openTopic",
+        "title": "주제 열기",
+        "category": "ArxivJS",
+        "icon": "$(table)"
+      },
+      {
         "command": "arxivjs.openPaper",
         "title": "논문 열기",
         "category": "ArxivJS",
@@ -155,6 +161,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "arxivjs.openTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic",
+          "group": "navigation@0"
+        },
         {
           "command": "arxivjs.reloadTopic",
           "when": "view == arxivjs.topics && viewItem == arxivjs.topic",

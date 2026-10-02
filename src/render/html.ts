@@ -41,7 +41,8 @@ export interface WebviewResources {
   cspSource: string;
   nonce: string;
   styleUris: string[];
-  scriptUri: string;
+  /** 순서대로 불러온다 */
+  scriptUris: string[];
 }
 
 /**
@@ -58,6 +59,11 @@ export function contentSecurityPolicy(cspSource: string, nonce: string): string 
     `font-src ${cspSource}`,
     `script-src 'nonce-${nonce}'`,
   ].join('; ');
+}
+
+/** nonce가 붙은 스크립트 태그 */
+export function scriptTags(res: WebviewResources): string {
+  return res.scriptUris.map((u) => `<script nonce="${res.nonce}" src="${escapeHtml(u)}"></script>`).join('\n  ');
 }
 
 function metaLine(vm: PaperViewModel): string {
@@ -122,7 +128,7 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
   ${abstract}
   ${toc(vm.headings)}
   ${body}
-  <script nonce="${res.nonce}" src="${escapeHtml(res.scriptUri)}"></script>
+  ${scriptTags(res)}
 </body>
 </html>`;
 }

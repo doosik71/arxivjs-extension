@@ -232,17 +232,24 @@ arxivjs-extension/
 │   │   └── models.ts            # Topic, Paper, PaperMeta 타입
 │   ├── views/
 │   │   ├── topicTreeProvider.ts # TreeDataProvider<Topic | Paper>
-│   │   ├── topicPanel.ts        # Topic Webview (논문 표)
-│   │   └── paperPanel.ts        # Paper Webview (메타 + md)
+│   │   ├── topicPanel.ts        # Topic Webview (논문 표, 초록 지연 렌더링)
+│   │   ├── paperPanel.ts        # Paper Webview (메타 + md)
+│   │   └── format.ts            # 표시 문자열 (vscode 비의존)
 │   ├── render/
-│   │   ├── markdown.ts          # markdown-it + katex + anchor 설정
-│   │   └── html.ts              # 템플릿, CSP, nonce, 이스케이프 유틸
+│   │   ├── markdown.ts          # markdown-it + katex, 제목 id·목차, 렌더 캐시
+│   │   ├── html.ts              # Paper 템플릿, CSP, nonce, 이스케이프 유틸
+│   │   └── topicHtml.ts         # Topic 템플릿, 표 데이터(JSON) 삽입
 │   └── util/
 │       ├── displayName.ts       # 이름 규칙 검사, "_" → " "
 │       ├── logger.ts            # Logger 인터페이스 (vscode 비의존)
 │       ├── mapLimit.ts          # 동시성 제한 병렬 처리
 │       └── log.ts               # OutputChannel "ArxivJS"
-├── media/                       # webview css/js, katex.min.css, fonts
+├── media/                       # webview 리소스
+│   ├── common.css               # 패널 공통 (테마 변수, 버튼, 안내, 배지)
+│   ├── paper.css / paper.js     # Paper 패널
+│   ├── topic.css / topic.js     # Topic 패널 (표 그리기, 이벤트)
+│   └── topicModel.js            # 표 정렬·필터 규칙 (webview와 단위 테스트가 함께 씀)
+├── dist/katex/                  # 빌드 때 복사하는 KaTeX CSS·woff2 폰트
 └── test/
     ├── fixtures/sample-data/    # 실데이터를 축약 복사한 테스트 데이터 (아래 설명 참고)
     ├── unit/

@@ -1,0 +1,67 @@
+/* 패널 공통: VS Code 테마 변수를 따른다 (라이트, 다크, 고대비) */
+:root {
+  --content-width: 920px;
+  --border: var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+}
+
+body {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 24px 64px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 14px);
+  line-height: 1.65;
+  word-wrap: break-word;
+}
+
+a { color: var(--vscode-textLink-foreground); text-decoration: none; }
+a:hover { color: var(--vscode-textLink-activeForeground); text-decoration: underline; }
+
+.toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.toolbar .spacer { flex: 1; }
+button {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  cursor: pointer;
+}
+button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
+button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vscode-textLink-foreground);
+}
+button.link:hover { text-decoration: underline; background: none; }
+
+.badge {
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+/* 안내 */
+.notice {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--vscode-notificationsInfoIcon-foreground, #3794ff);
+  background: var(--vscode-textBlockQuote-background);
+}
+.notice-warning { border-left-color: var(--vscode-notificationsWarningIcon-foreground, #cca700); }
+.notice-error { border-left-color: var(--vscode-notificationsErrorIcon-foreground, #f14c4c); }
+
+summary { cursor: pointer; font-weight: 600; color: var(--vscode-descriptionForeground); }
+
+/* 수식 */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.katex { font-size: 1.08em; }
+.katex-error { color: var(--vscode-errorForeground); }

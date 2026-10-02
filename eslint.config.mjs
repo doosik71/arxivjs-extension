@@ -83,7 +83,7 @@ export default tseslint.config(
     languageOptions: {
       sourceType: 'script',
       globals: Object.fromEntries(
-        ['acquireVsCodeApi', 'window', 'document', 'Element', 'setTimeout', 'clearTimeout'].map((g) => [g, 'readonly']),
+        ['acquireVsCodeApi', 'window', 'document', 'Element', 'setTimeout', 'clearTimeout', 'ResizeObserver', 'self', 'globalThis', 'module'].map((g) => [g, 'readonly']),
       ),
     },
   },

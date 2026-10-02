@@ -36,6 +36,7 @@ export type TreeNode = TopicNode | PaperNode | MessageNode;
 export const TOPIC_CONTEXT = 'arxivjs.topic';
 export const PAPER_CONTEXT = 'arxivjs.paper';
 export const OPEN_PAPER_COMMAND = 'arxivjs.openPaper';
+export const OPEN_TOPIC_COMMAND = 'arxivjs.openTopic';
 
 export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vscode.Disposable {
   private readonly changeEmitter = new vscode.EventEmitter<TreeNode | undefined>();
@@ -106,7 +107,7 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
   getTreeItem(node: TreeNode): vscode.TreeItem {
     switch (node.kind) {
       case 'topic':
-        return this.topicItem(node.topic);
+        return this.topicItem(node);
       case 'paper':
         return this.paperItem(node);
       case 'message': {
@@ -176,13 +177,15 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
     }
   }
 
-  private topicItem(topic: Topic): vscode.TreeItem {
+  private topicItem(node: TopicNode): vscode.TreeItem {
+    const { topic } = node;
     const item = new vscode.TreeItem(topic.label, vscode.TreeItemCollapsibleState.Collapsed);
     item.id = `topic:${topic.id}`;
     item.description = topicDescription(this.paperCounts.get(topic.id));
     item.tooltip = `${topic.id}\n${topic.path}`;
     item.iconPath = new vscode.ThemeIcon('library');
     item.contextValue = TOPIC_CONTEXT;
+    item.command = { command: OPEN_TOPIC_COMMAND, title: '주제 열기', arguments: [node] };
     return item;
   }
 

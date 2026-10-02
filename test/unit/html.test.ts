@@ -5,7 +5,7 @@ const res: WebviewResources = {
   cspSource: 'https://webview.test',
   nonce: 'NONCE123',
   styleUris: ['https://webview.test/katex.min.css', 'https://webview.test/paper.css'],
-  scriptUri: 'https://webview.test/paper.js',
+  scriptUris: ['https://webview.test/paper.js'],
 };
 
 const vm = (over: Partial<PaperViewModel> = {}): PaperViewModel => ({

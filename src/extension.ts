@@ -7,12 +7,14 @@ import { nodeReadonlyFs } from './data/readonlyFs';
 import { createLogger } from './util/log';
 import { citationText, paperDescription } from './views/format';
 import { openExternalUrl, PaperPanelManager } from './views/paperPanel';
+import { TopicPanelManager } from './views/topicPanel';
 import { TOPICS_VIEW_ID, TopicTreeProvider, type TreeNode } from './views/topicTreeProvider';
 
 /** 통합 테스트용으로 노출하는 내부 API */
 export interface ArxivjsApi {
   readonly tree: TopicTreeProvider;
   readonly panels: PaperPanelManager;
+  readonly topicPanel: TopicPanelManager;
   getLibrary(): Library | undefined;
 }
 
@@ -55,7 +57,36 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       getLibrary: () => library,
       openInNewTab: () => config.openInNewTab,
       revealTopic: (topicId) => void revealTopic(topicId),
-      onPaperReloaded: (topicId) => tree.refreshTopic(topicId),
+      onPaperReloaded: (topicId) => {
+        tree.refreshTopic(topicId);
+        void topicPanel.refresh(topicId);
+      },
+    },
+    log,
+  );
+
+  /** 전체 Reload: 캐시를 비우고 트리와 Topic 패널을 다시 그린다. */
+  const reloadAll = () => {
+    log.info('Reload: 전체');
+    tree.reloadAll();
+    void topicPanel.refresh();
+  };
+
+  /** 주제 Reload: 그 주제의 캐시를 비우고 트리 노드와 (보고 있으면) Topic 패널을 다시 그린다. */
+  const reloadTopic = (topicId: string) => {
+    log.info(`Reload: 주제 ${topicId}`);
+    tree.reloadTopic(topicId);
+    void topicPanel.refresh(topicId);
+  };
+
+  const topicPanel = new TopicPanelManager(
+    context.extensionUri,
+    {
+      getLibrary: () => library,
+      defaultSort: () => config.paperSort,
+      // Topic 패널 옆에 Paper 패널을 열어 표를 계속 볼 수 있게 한다.
+      openPaper: (topic, paper) => void panels.show(topic, paper, vscode.ViewColumn.Beside),
+      reloadTopic,
     },
     log,
   );
@@ -66,27 +97,33 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     return pick(node) ?? panels.activePaper ?? pick(treeView.selection[0]);
   };
 
-  /** 인자 없이 "논문 열기"를 실행하면 주제 → 논문 순으로 고른다. */
-  const pickPaper = async (): Promise<PaperTarget | undefined> => {
+  /** 주제 QuickPick */
+  const pickTopic = async (title: string): Promise<Topic | undefined> => {
     if (!library) {
       void vscode.window.showWarningMessage('ArxivJS: 데이터 폴더를 먼저 설정하세요.');
       return undefined;
     }
-    const lib = library;
-    const topic = await vscode.window.showQuickPick<vscode.QuickPickItem & { topic: Topic }>(
-      lib.topics.list().then((topics) => topics.map((t) => ({ label: t.label, description: t.id, topic: t }))),
-      { title: '논문 열기: 주제 선택', placeHolder: '주제 이름으로 검색', matchOnDescription: true },
+    const picked = await vscode.window.showQuickPick<vscode.QuickPickItem & { topic: Topic }>(
+      library.topics.list().then((topics) => topics.map((t) => ({ label: t.label, description: t.id, topic: t }))),
+      { title, placeHolder: '주제 이름으로 검색', matchOnDescription: true },
     );
-    if (!topic) {
+    return picked?.topic;
+  };
+
+  /** 인자 없이 "논문 열기"를 실행하면 주제 → 논문 순으로 고른다. */
+  const pickPaper = async (): Promise<PaperTarget | undefined> => {
+    const lib = library;
+    const topic = await pickTopic('논문 열기: 주제 선택');
+    if (!topic || !lib) {
       return undefined;
     }
     const paper = await vscode.window.showQuickPick<vscode.QuickPickItem & { paper: Paper }>(
-      lib.papers.list(topic.topic).then((papers) =>
+      lib.papers.list(topic).then((papers) =>
         papers.map((p) => ({ label: p.meta.title, description: paperDescription(p), detail: p.meta.authors, paper: p })),
       ),
       { title: `논문 열기: ${topic.label}`, placeHolder: '제목이나 저자로 검색', matchOnDescription: true, matchOnDetail: true },
     );
-    return paper && { topic: topic.topic, paper: paper.paper };
+    return paper && { topic, paper: paper.paper };
   };
 
   context.subscriptions.push(
@@ -94,6 +131,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     tree,
     treeView,
     panels,
+    topicPanel,
 
     vscode.commands.registerCommand('arxivjs.selectDataFolder', async () => {
       const picked = await vscode.window.showOpenDialog({
@@ -109,25 +147,28 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       }
       const folder = picked[0].fsPath;
       if (folder === config.dataFolder) {
-        tree.reloadAll(); // 같은 폴더를 다시 고르면 설정 변경 이벤트가 없으므로 직접 다시 읽는다.
+        reloadAll(); // 같은 폴더를 다시 고르면 설정 변경 이벤트가 없으므로 직접 다시 읽는다.
       } else {
         await saveDataFolder(folder);
       }
     }),
 
-    vscode.commands.registerCommand('arxivjs.reload', () => {
-      log.info('Reload: 전체');
-      tree.reloadAll();
-    }),
+    vscode.commands.registerCommand('arxivjs.reload', () => reloadAll()),
 
     vscode.commands.registerCommand('arxivjs.reloadTopic', (node?: TreeNode) => {
       if (node?.kind === 'topic') {
-        log.info(`Reload: 주제 ${node.topic.id}`);
-        tree.reloadTopic(node.topic.id);
+        reloadTopic(node.topic.id);
       }
     }),
 
     vscode.commands.registerCommand('arxivjs.reloadPaper', () => panels.reload()),
+
+    vscode.commands.registerCommand('arxivjs.openTopic', async (node?: TreeNode) => {
+      const topic = node?.kind === 'topic' ? node.topic : await pickTopic('주제 열기');
+      if (topic) {
+        await topicPanel.show(topic);
+      }
+    }),
 
     vscode.commands.registerCommand('arxivjs.openPaper', async (node?: TreeNode) => {
       const target = node?.kind === 'paper' ? resolvePaper(node) : await pickPaper();
@@ -164,7 +205,8 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       const previous = config;
       config = readConfig();
       if (config.dataFolder !== previous.dataFolder || config.dataFolderRaw !== previous.dataFolderRaw) {
-        panels.closeAll(); // 다른 데이터 폴더의 논문을 계속 보여주지 않는다.
+        panels.closeAll(); // 다른 데이터 폴더의 내용을 계속 보여주지 않는다.
+        topicPanel.closeAll();
         createLibrary();
         updateViewDescription();
         tree.reloadAll();
@@ -175,7 +217,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   );
 
   log.info('ArxivJS Viewer activated');
-  return { tree, panels, getLibrary: () => library };
+  return { tree, panels, topicPanel, getLibrary: () => library };
 }
 
 export function deactivate(): void {}

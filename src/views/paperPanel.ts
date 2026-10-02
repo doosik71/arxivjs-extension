@@ -57,7 +57,8 @@ export class PaperPanelManager implements vscode.Disposable {
     return [...this.entries.values()].find((e) => e.paper.id === paperId)?.panel.webview.html;
   }
 
-  async show(topic: Topic, paper: Paper): Promise<void> {
+  /** column: 새 패널을 열 위치 (기본: 현재 편집기 그룹). 이미 열린 패널은 그 자리에서 바꾼다. */
+  async show(topic: Topic, paper: Paper, column: vscode.ViewColumn = vscode.ViewColumn.Active): Promise<void> {
     const key = this.host.openInNewTab() ? paper.id : PREVIEW_KEY;
     let entry = this.entries.get(key);
     if (entry) {
@@ -65,7 +66,7 @@ export class PaperPanelManager implements vscode.Disposable {
       entry.paper = paper;
       entry.panel.reveal(undefined, false);
     } else {
-      entry = this.createEntry(key, topic, paper);
+      entry = this.createEntry(key, topic, paper, column);
     }
     await this.render(entry);
   }
@@ -102,11 +103,11 @@ export class PaperPanelManager implements vscode.Disposable {
     this.closeAll();
   }
 
-  private createEntry(key: string, topic: Topic, paper: Paper): PanelEntry {
+  private createEntry(key: string, topic: Topic, paper: Paper, column: vscode.ViewColumn): PanelEntry {
     const panel = vscode.window.createWebviewPanel(
       PAPER_PANEL_TYPE,
       ellipsize(paper.meta.title, TITLE_CHARS),
-      { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
+      { viewColumn: column, preserveFocus: false },
       {
         enableScripts: true,
         enableFindWidget: true,
@@ -207,8 +208,8 @@ export class PaperPanelManager implements vscode.Disposable {
       {
         cspSource: webview.cspSource,
         nonce: createNonce(),
-        styleUris: [uri('dist', 'katex', 'katex.min.css'), uri('media', 'paper.css')],
-        scriptUri: uri('media', 'paper.js'),
+        styleUris: [uri('dist', 'katex', 'katex.min.css'), uri('media', 'common.css'), uri('media', 'paper.css')],
+        scriptUris: [uri('media', 'paper.js')],
       },
     );
   }
