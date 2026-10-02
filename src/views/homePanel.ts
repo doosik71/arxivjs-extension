@@ -5,6 +5,7 @@ import { buildHomeHtml } from '../render/homeHtml';
 import { createNonce, type Notice } from '../render/html';
 import type { Logger } from '../util/logger';
 import { mapLimit } from '../util/mapLimit';
+import { tabIcon } from './paperPanel';
 
 export const HOME_PANEL_TYPE = 'arxivjs.home';
 
@@ -75,6 +76,7 @@ export class HomePanelManager implements vscode.Disposable {
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: options.preserveFocus ?? false },
         { enableScripts: true, enableFindWidget: true, localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media')] },
       );
+      this.panel.iconPath = tabIcon(this.extensionUri, 'home');
       this.panel.onDidDispose(() => {
         this.panel = undefined;
         this.topics.clear();

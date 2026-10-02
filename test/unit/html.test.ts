@@ -85,6 +85,19 @@ describe('buildPaperHtml', () => {
     expect(buildPaperHtml(vm({ headings: [{ level: 2, text: 'A', id: 'a' }] }), res)).not.toContain('class="toc"');
   });
 
+  it('"로컬 문서 열기" 버튼은 "원문 열기" 오른쪽에, md 경로를 툴팁으로', () => {
+    const html = buildPaperHtml(vm({ localDocument: 'D:\\data\\T\\a <b>.md' }), res);
+    const external = html.indexOf('data-action="openExternal"');
+    const local = html.indexOf('data-action="openLocal"');
+    expect(external).toBeGreaterThan(0);
+    expect(local).toBeGreaterThan(external);
+    expect(html).toContain('title="D:\\data\\T\\a &lt;b&gt;.md">로컬 문서 열기</button>');
+  });
+
+  it('md가 없으면 "로컬 문서 열기" 버튼이 없다', () => {
+    expect(buildPaperHtml(vm({ localDocument: undefined }), res)).not.toContain('data-action="openLocal"');
+  });
+
   it('URL이 없으면 원문 열기 버튼이 없다', () => {
     expect(buildPaperHtml(vm({ url: undefined }), res)).not.toContain('data-action="openExternal"');
   });

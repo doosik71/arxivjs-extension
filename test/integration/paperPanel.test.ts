@@ -99,6 +99,24 @@ suite('Paper 패널', () => {
     assert.match(html, /markdown-body/);
   });
 
+  test('"로컬 문서 열기": 실제 md 파일을 편집기로 연다 (md가 없는 논문에는 버튼이 없다)', async () => {
+    const node = await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification');
+    const html = await open(node);
+    assert.match(html, /data-action="openExternal"[^]*data-action="openLocal"/, '원문 열기 오른쪽에 있어야 한다');
+
+    await api.panels.handleMessage(node.paper.id, { type: 'openLocal' });
+    await waitFor(
+      () => vscode.window.activeTextEditor?.document.uri.fsPath.toLowerCase() === node.paper.mdPath!.toLowerCase(),
+      `md 파일이 열리지 않았다: ${vscode.window.activeTextEditor?.document.uri.fsPath}`,
+    );
+    const doc = vscode.window.activeTextEditor!.document;
+    assert.strictEqual(doc.uri.scheme, 'file');
+    assert.strictEqual(doc.isDirty, false, '열기만 하고 내용은 바꾸지 않는다');
+
+    const noMd = await open(await paperNode('Few-Shot_Learning', 'domain_agnostic_few_shot_classification_by_learning_disparate_modulators'));
+    assert.ok(!noMd.includes('data-action="openLocal"'));
+  });
+
   test('기본(openInNewTab=true)은 논문마다 새 탭을 연다. 같은 논문은 기존 탭을 쓴다', async () => {
     await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
     await open(await paperNode('Cosine_Similarity', 'low_shot_learning_with_imprinted_weights'));

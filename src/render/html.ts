@@ -32,6 +32,8 @@ export interface PaperViewModel {
   abstractHtml?: string;
   /** 렌더링된 본문 (render 결과). 없으면 문서 없음 */
   bodyHtml?: string;
+  /** md 파일 경로. 있으면 "로컬 문서 열기" 버튼을 보여준다 (툴팁에 경로 표시) */
+  localDocument?: string;
   headings: Heading[];
   notices: Notice[];
 }
@@ -115,6 +117,9 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
   const openButton = vm.url
     ? `<button type="button" data-action="openExternal" title="${escapeHtml(vm.url)}">원문 열기</button>`
     : '';
+  const localButton = vm.localDocument
+    ? `<button type="button" data-action="openLocal" title="${escapeHtml(vm.localDocument)}">로컬 문서 열기</button>`
+    : '';
   const abstract = vm.abstractHtml
     ? `<section class="abstract"><details${vm.bodyHtml ? '' : ' open'}><summary>초록 (Abstract)</summary><div class="abstract-body">${vm.abstractHtml}</div></details></section>`
     : '';
@@ -135,6 +140,7 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
       <button type="button" class="link" data-action="revealTopic" title="트리에서 주제 보기">${escapeHtml(vm.topicLabel)}</button>
       <span class="spacer"></span>
       ${openButton}
+      ${localButton}
       <button type="button" data-action="copyInfo" title="제목, 저자, 연도, URL 복사">정보 복사</button>
       <button type="button" data-action="reload" title="이 논문을 다시 읽기">⟳ Reload</button>
     </div>

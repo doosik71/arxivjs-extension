@@ -23,6 +23,14 @@ interface PanelEntry {
   createdColumn: vscode.ViewColumn;
 }
 
+/** 탭 아이콘 (media/icons/<name>-light.svg, -dark.svg). 홈·Topic·Paper 탭을 아이콘으로 구분한다. */
+export function tabIcon(extensionUri: vscode.Uri, name: 'home' | 'topic' | 'paper'): { light: vscode.Uri; dark: vscode.Uri } {
+  return {
+    light: vscode.Uri.joinPath(extensionUri, 'media', 'icons', `${name}-light.svg`),
+    dark: vscode.Uri.joinPath(extensionUri, 'media', 'icons', `${name}-dark.svg`),
+  };
+}
+
 /** 활성 편집기 그룹 번호 (편집기가 하나도 없으면 1) */
 export function activeColumn(): vscode.ViewColumn {
   return vscode.window.tabGroups.activeTabGroup?.viewColumn ?? vscode.ViewColumn.One;
@@ -150,6 +158,7 @@ export class PaperPanelManager implements vscode.Disposable {
         localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media'), vscode.Uri.joinPath(this.extensionUri, 'dist', 'katex')],
       },
     );
+    panel.iconPath = tabIcon(this.extensionUri, 'paper');
     const entry: PanelEntry = { key, panel, topic, paper, renderSeq: 0, createdColumn: column };
     this.entries.set(key, entry);
     this.activeEntry = entry;
@@ -169,6 +178,14 @@ export class PaperPanelManager implements vscode.Disposable {
     return entry;
   }
 
+  /** 열린 논문 패널에 webview 메시지를 보낸 것처럼 처리한다 (통합 테스트용) */
+  async handleMessage(paperId: string, msg: { type?: string; href?: string }): Promise<void> {
+    const entry = [...this.entries.values()].find((e) => e.paper.id === paperId);
+    if (entry) {
+      await this.onMessage(entry, msg);
+    }
+  }
+
   private async onMessage(entry: PanelEntry, msg: { type?: string; href?: string }): Promise<void> {
     switch (msg.type) {
       case 'reload':
@@ -176,6 +193,16 @@ export class PaperPanelManager implements vscode.Disposable {
       case 'openExternal':
         if (entry.paper.meta.url) {
           await openExternalUrl(entry.paper.meta.url, this.log);
+        }
+        return;
+      case 'openLocal':
+        // 사용자가 요청한 동작: 실제 md 파일을 일반 편집기로 연다 (편집·저장 가능).
+        // 확장 자체는 쓰지 않는다. 저장은 사용자가 직접 할 때만 일어난다.
+        if (entry.paper.mdPath) {
+          await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(entry.paper.mdPath), {
+            viewColumn: columnOf(entry),
+            preview: false,
+          });
         }
         return;
       case 'copyInfo':
@@ -238,6 +265,7 @@ export class PaperPanelManager implements vscode.Disposable {
         topicLabel: topic.label,
         abstractHtml: paper.meta.abstract ? this.renderer.renderInline(paper.meta.abstract) : undefined,
         bodyHtml,
+        localDocument: bodyHtml !== undefined ? paper.mdPath : undefined,
         headings,
         notices,
       },

@@ -6,7 +6,7 @@ import { createNonce, type Notice } from '../render/html';
 import { PaperRenderer } from '../render/markdown';
 import { buildTopicHtml, toTopicRow } from '../render/topicHtml';
 import type { Logger } from '../util/logger';
-import { activeColumn, openExternalUrl } from './paperPanel';
+import { activeColumn, openExternalUrl, tabIcon } from './paperPanel';
 
 export const TOPIC_PANEL_TYPE = 'arxivjs.topic';
 
@@ -97,6 +97,7 @@ export class TopicPanelManager implements vscode.Disposable {
         localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media'), vscode.Uri.joinPath(this.extensionUri, 'dist', 'katex')],
       },
     );
+    panel.iconPath = tabIcon(this.extensionUri, 'topic');
     panel.onDidDispose(() => {
       this.panel = undefined;
       this.topic = undefined;

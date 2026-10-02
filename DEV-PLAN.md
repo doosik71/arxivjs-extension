@@ -187,28 +187,28 @@ md만 있는 2건은 파일명이 base64로 인코딩된 URL이다(예: `aHR0cDo
 
 ### 3.3 명령 (Command Palette)
 
-| ID | 제목 |
-| --- | --- |
-| `arxivjs.openHome` | ArxivJS: 주제 목록(홈) 열기 (TOPICS 제목줄 `[🏠]`) |
-| `arxivjs.selectDataFolder` | ArxivJS: 데이터 폴더 선택 |
-| `arxivjs.reload` | ArxivJS: Reload (전체 다시 읽기) |
-| `arxivjs.reloadTopic` | ArxivJS: Reload Topic (주제 노드 인라인 버튼, Topic 패널) |
-| `arxivjs.reloadPaper` | ArxivJS: Reload Paper (Paper 패널) |
-| `arxivjs.openSettings` | ArxivJS: 설정 열기 (TOPICS 제목줄 `[⚙]`) |
-| `arxivjs.openTopic` | ArxivJS: 주제 열기 (QuickPick) |
-| `arxivjs.openPaper` | ArxivJS: 논문 열기 (QuickPick: 주제 → 논문) |
-| `arxivjs.openExternal` | ArxivJS: 원문 URL 열기 |
-| `arxivjs.copyCitationInfo` | ArxivJS: 논문 정보 복사 (클립보드) |
+| ID                         | 제목                                                      |
+| -------------------------- | --------------------------------------------------------- |
+| `arxivjs.openHome`         | ArxivJS: 주제 목록(홈) 열기 (TOPICS 제목줄 `[🏠]`)         |
+| `arxivjs.selectDataFolder` | ArxivJS: 데이터 폴더 선택                                 |
+| `arxivjs.reload`           | ArxivJS: Reload (전체 다시 읽기)                          |
+| `arxivjs.reloadTopic`      | ArxivJS: Reload Topic (주제 노드 인라인 버튼, Topic 패널) |
+| `arxivjs.reloadPaper`      | ArxivJS: Reload Paper (Paper 패널)                        |
+| `arxivjs.openSettings`     | ArxivJS: 설정 열기 (TOPICS 제목줄 `[⚙]`)                  |
+| `arxivjs.openTopic`        | ArxivJS: 주제 열기 (QuickPick)                            |
+| `arxivjs.openPaper`        | ArxivJS: 논문 열기 (QuickPick: 주제 → 논문)               |
+| `arxivjs.openExternal`     | ArxivJS: 원문 URL 열기                                    |
+| `arxivjs.copyCitationInfo` | ArxivJS: 논문 정보 복사 (클립보드)                        |
 
 ### 3.4 설정 (`contributes.configuration`)
 
-| 키 | 타입 | 기본값 | 설명 |
-| --- | --- | --- | --- |
-| `arxivjs.dataFolder` | string | `""` | 데이터 폴더 절대 경로. `scope: machine`. |
-| `arxivjs.paperSort` | enum | `citation` | `citation` \| `year` \| `title` |
-| `arxivjs.openInNewTab` | boolean | `true` | 논문마다 새 탭을 연다. |
-| `arxivjs.paperPanelLocation` | enum | `sameGroup` | `sameGroup` \| `beside` (§3.2) |
-| `arxivjs.openHomeOnStartup` | boolean | `true` | ArxivJS 뷰를 처음 열 때 홈을 연다 (§3.2.1) |
+| 키                           | 타입    | 기본값      | 설명                                       |
+| ---------------------------- | ------- | ----------- | ------------------------------------------ |
+| `arxivjs.dataFolder`         | string  | `""`        | 데이터 폴더 절대 경로. `scope: machine`.   |
+| `arxivjs.paperSort`          | enum    | `citation`  | `citation` \| `year` \| `title`            |
+| `arxivjs.openInNewTab`       | boolean | `true`      | 논문마다 새 탭을 연다.                     |
+| `arxivjs.paperPanelLocation` | enum    | `sameGroup` | `sameGroup` \| `beside` (§3.2)             |
+| `arxivjs.openHomeOnStartup`  | boolean | `true`      | ArxivJS 뷰를 처음 열 때 홈을 연다 (§3.2.1) |
 
 `dataFolder`가 비어 있거나 경로가 없으면 TreeView에 **Welcome View**를 보여준다. 여기에 "데이터 폴더 선택" 버튼을 둔다.
 
@@ -315,13 +315,13 @@ interface Paper {
 
 데이터 계층의 공개 API (P1 구현):
 
-| 모듈 | API |
-| --- | --- |
-| `readonlyFs.ts` | `ReadonlyFileSystem { readText, readDir, stat }`, `nodeReadonlyFs`. 오류는 `DataError(kind: notFound \| notDirectory \| io)`로 바꿔 던진다. |
-| `topicRepository.ts` | `list()`, `get(id)`, `reload()` |
-| `paperRepository.ts` | `list(topic)`, `isLoaded(topicId)`, `reloadTopic(topicId)`, `reloadAll()`, `reloadPaper(topic, stem)`, `readMarkdown(paper)` |
-| `paperMeta.ts` | `parseMetaJson`, `parseMarkdownHeader`(md의 H1과 "저자 (연도)" 줄), `decodeStemUrl`(base64 파일 이름 → URL), `fallbackMeta` |
-| `paperSort.ts` | `sortPapers(papers, mode)` |
+| 모듈                 | API                                                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `readonlyFs.ts`      | `ReadonlyFileSystem { readText, readDir, stat }`, `nodeReadonlyFs`. 오류는 `DataError(kind: notFound \| notDirectory \| io)`로 바꿔 던진다. |
+| `topicRepository.ts` | `list()`, `get(id)`, `reload()`                                                                                                             |
+| `paperRepository.ts` | `list(topic)`, `isLoaded(topicId)`, `reloadTopic(topicId)`, `reloadAll()`, `reloadPaper(topic, stem)`, `readMarkdown(paper)`                |
+| `paperMeta.ts`       | `parseMetaJson`, `parseMarkdownHeader`(md의 H1과 "저자 (연도)" 줄), `decodeStemUrl`(base64 파일 이름 → URL), `fallbackMeta`                 |
+| `paperSort.ts`       | `sortPapers(papers, mode)`                                                                                                                  |
 
 ### 5.3 데이터 흐름
 
@@ -387,7 +387,7 @@ Reload 버튼(사용자) ── 범위(전체 / 주제 / 논문)의 캐시 무�
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **설계**           | 데이터 폴더 접근은 `src/data/readonlyFs.ts` 한 곳으로만 한다. 이 모듈은 `readFile`, `readDirectory`, `stat`만 노출한다.                                                                                                                                                                                       |
 | **정적 검사**      | ESLint로 `src/data/readonlyFs.ts` 밖에서 `fs`와 `vscode.workspace.fs`를 import하거나 접근하지 못하게 막는다. 전 범위에서 `writeFile`, `delete`, `rename`, `copy`, `createDirectory`, `mkdir`, `rm`, `unlink`, `appendFile`, `WorkspaceEdit` 사용을 금지한다(`no-restricted-syntax`, `no-restricted-imports`). |
-| **편집 경로 차단** | md와 json을 `TextDocument` 에디터로 열지 않는다(`openTextDocument` 사용 금지). "원본 보기" 기능이 필요하면 `isReadonly: true`인 커스텀 `FileSystemProvider`(scheme `arxivjs-ro`)로만 연다.                                                                                                                    |
+| **편집 경로 차단** | 확장 코드는 `openTextDocument`나 `WorkspaceEdit`로 파일 내용을 다루지 않는다(린트로 금지). **예외(0.2.0, 사용자 결정)**: Paper 패널의 "로컬 문서 열기"는 사용자가 누를 때만 `vscode.open`으로 실제 md를 일반 편집기에 연다. 편집과 저장은 사용자의 직접 동작이고, 확장은 쓰지 않는다.                         |
 | **부수 파일 금지** | 캐시와 인덱스는 메모리에 둔다. 영속 캐시가 필요하면 `context.globalStorageUri`에 저장하고, 데이터 폴더에는 아무것도 만들지 않는다.                                                                                                                                                                            |
 | **테스트**         | 통합 테스트는 fixture 폴더를 OS 수준 읽기 전용으로 설정한 뒤 돌린다(Windows `attrib +R /S`). 테스트 전후로 파일 해시와 mtime 스냅샷을 비교해서 하나도 바뀌지 않았는지 확인한다.                                                                                                                               |
 | **개발 규칙**      | 개발 중 실제 데이터 폴더(`D:\dev\javascript\arxivjsdata`)는 `dataFolder` 설정으로 **열람만** 한다. 테스트, 스크립트, 린트 자동 수정(`markdownlint --fix` 등)은 절대 그 경로를 대상으로 하지 않는다.                                                                                                           |
@@ -434,14 +434,14 @@ P0–P5를 모두 마쳤다. 0.2.0에서 홈(주제 목록), 논문 탭 위치 �
 - 게시자: [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)
 - 확장 ID: `doosik71.arxivjs-viewer`
 
-| 단계 | 상태 | 결과 |
-| --- | --- | --- |
-| P0 스캐폴딩 | 완료 | esbuild, ESLint(읽기 전용 규칙), vitest, fixture |
-| P1 데이터 계층 | 완료 | `readonlyFs`, 저장소, 메타 파싱, 정렬, 재시도 |
-| P2 주제 트리 | 완료 | TreeView, Welcome View, Reload(전체·주제), 툴팁 |
-| P3 논문 렌더링 | 완료 | Paper 패널, KaTeX, CSP·nonce, 메타 헤더, 목차 |
-| P4 주제 패널 | 완료 | Topic 패널(정렬, 필터, 초록), 패널 간 Reload 연동 |
-| P5 품질·배포 | 완료 | 읽기 전용 검증 통합 테스트, 성능 측정, 아이콘, `vsce package` |
+| 단계           | 상태 | 결과                                                          |
+| -------------- | ---- | ------------------------------------------------------------- |
+| P0 스캐폴딩    | 완료 | esbuild, ESLint(읽기 전용 규칙), vitest, fixture              |
+| P1 데이터 계층 | 완료 | `readonlyFs`, 저장소, 메타 파싱, 정렬, 재시도                 |
+| P2 주제 트리   | 완료 | TreeView, Welcome View, Reload(전체·주제), 툴팁               |
+| P3 논문 렌더링 | 완료 | Paper 패널, KaTeX, CSP·nonce, 메타 헤더, 목차                 |
+| P4 주제 패널   | 완료 | Topic 패널(정렬, 필터, 초록), 패널 간 Reload 연동             |
+| P5 품질·배포   | 완료 | 읽기 전용 검증 통합 테스트, 성능 측정, 아이콘, `vsce package` |
 
 ### 검증 결과
 
@@ -452,19 +452,19 @@ P0–P5를 모두 마쳤다. 0.2.0에서 홈(주제 목록), 논문 탭 위치 �
   - 새 파일이 생기면 비교에서 잡혀 종료 코드 2로 실패한다.
 - 실데이터 성능 (`npm run bench -- <실데이터>`, 읽기만 함):
 
-| 항목 | 측정 | 목표 |
-| --- | --- | --- |
-| 주제 목록 (108개) | 1.9ms | 100ms 이하 |
-| 가장 큰 주제 첫 로딩 (275편) | 9.2ms | 500ms 이하 |
-| 가장 큰 md 렌더링 (118,766자) | 3.5ms | 200ms 이하 |
-| md 4,427개 전체 렌더링 | p50 0.9ms, p95 2.6ms, 렌더링 예외 0건 | — |
+| 항목                          | 측정                                  | 목표       |
+| ----------------------------- | ------------------------------------- | ---------- |
+| 주제 목록 (108개)             | 1.9ms                                 | 100ms 이하 |
+| 가장 큰 주제 첫 로딩 (275편)  | 9.2ms                                 | 500ms 이하 |
+| 가장 큰 md 렌더링 (118,766자) | 3.5ms                                 | 200ms 이하 |
+| md 4,427개 전체 렌더링        | p50 0.9ms, p95 2.6ms, 렌더링 예외 0건 | —          |
 
 - 렌더링 결과로 KaTeX 옵션을 하나 바꿨다. 기본 `strict: 'warn'`은 수식 안의 한글마다 콘솔 경고를 냈다(실데이터 686건). 그래서 `strict: 'ignore'`로 바꿨다.
 - 배포에 들어가는 의존성의 `npm audit` 결과는 취약점 0건이다.
 
 ### 남은 확인 사항
 
-| 항목 | 현재 | 필요한 결정 |
-| --- | --- | --- |
+| 항목           | 현재                                               | 필요한 결정                                                                         |
+| -------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | 최소 버전 검증 | 1.90.0 다운로드가 이 환경에서 네트워크 오류로 실패 | `VSCODE_TEST_VERSION=1.90.0 npm run test:integration`을 네트워크가 되는 곳에서 실행 |
-| 화면 확인 | 테스트는 HTML 문자열까지만 검증한다 | `F5`로 실제 화면(KaTeX 폰트, 고정 헤더, 다크 테마)을 확인 |
+| 화면 확인      | 테스트는 HTML 문자열까지만 검증한다                | `F5`로 실제 화면(KaTeX 폰트, 고정 헤더, 다크 테마)을 확인                           |
