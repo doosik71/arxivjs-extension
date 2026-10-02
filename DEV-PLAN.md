@@ -38,13 +38,13 @@ arxivjsdata/
 ├── .markdownlint.json
 ├── run-lint.bat / .sh       # markdownlint --fix 스크립트
 ├── userprompt*.txt
-├── AI_Healthcare/           # 주제 폴더 (총 112개)
+├── AI_Healthcare/           # 주제 폴더 (총 108개)
 ├── Activation_Function/
 ├── Few-Shot_Learning/
 └── ...
 ```
 
-- 주제 폴더는 **112개**이고, 모두 1단계 깊이다. 주제 폴더 안에 하위 폴더는 없다.
+- 주제 폴더는 **108개**이고, 모두 1단계 깊이다. 주제 폴더 안에 하위 폴더는 없다.
 - 최상위에는 폴더가 아닌 파일과 `.git` 같은 dot 폴더가 섞여 있다. 주제 목록에서는 **폴더만, dot으로 시작하지 않는 것만** 대상으로 한다.
 
 ### 2.2 주제 폴더 이름 규칙
@@ -72,7 +72,7 @@ Self-Supervised_Learning, Semi-Supervised_Learning, U-Net, Zero-Shot_Learning
 
 - 파일명은 소문자 snake_case 제목에서 만든 stem이다. 예: `a_closer_look_at_few_shot_classification`.
 - 같은 stem을 공유하는 `.json`과 `.md`가 한 쌍을 이룬다.
-- 주제당 논문 수는 최소 2개, 최대 617개다(`Instance_Segmentation`).
+- 주제당 논문 수는 최소 1편, 최대 275편이다(`Instance_Segmentation`). 전체는 4,608편이다(json 또는 md 기준).
 
 ### 2.4 json/md 짝이 맞지 않는 경우
 
@@ -224,7 +224,10 @@ arxivjs-extension/
 │   ├── data/
 │   │   ├── readonlyFs.ts        # ★ 유일한 파일 시스템 접근 지점 (read/stat/readdir만)
 │   │   ├── topicRepository.ts   # 주제 스캔, 표시 이름 변환
-│   │   ├── paperRepository.ts   # json/md 짝 맞추기, 메타 파싱, 캐시
+│   │   ├── paperRepository.ts   # json/md 짝 맞추기, 캐시, reload, 재시도
+│   │   ├── paperMeta.ts         # json 파싱, md 헤더 추출, base64 파일 이름 → URL
+│   │   ├── paperSort.ts         # 정렬 (citation / year / title)
+│   │   ├── errors.ts            # DataError (notFound / notDirectory / io)
 │   │   └── models.ts            # Topic, Paper, PaperMeta 타입
 │   ├── views/
 │   │   ├── topicTreeProvider.ts # TreeDataProvider<Topic | Paper>
@@ -234,7 +237,9 @@ arxivjs-extension/
 │   │   ├── markdown.ts          # markdown-it + katex + anchor 설정
 │   │   └── html.ts              # 템플릿, CSP, nonce, 이스케이프 유틸
 │   └── util/
-│       ├── displayName.ts       # "_" → " "
+│       ├── displayName.ts       # 이름 규칙 검사, "_" → " "
+│       ├── logger.ts            # Logger 인터페이스 (vscode 비의존)
+│       ├── mapLimit.ts          # 동시성 제한 병렬 처리
 │       └── log.ts               # OutputChannel "ArxivJS"
 ├── media/                       # webview css/js, katex.min.css, fonts
 └── test/
@@ -247,11 +252,13 @@ arxivjs-extension/
 
 ### 5.2 데이터 모델
 
+데이터 계층(`src/data/`)은 `vscode` 모듈에 의존하지 않는다. 그래서 vitest로 바로 테스트할 수 있다. 경로는 문자열(절대 경로)로 다루고, `vscode.Uri`로 바꾸는 일은 뷰 계층에서 한다.
+
 ```ts
 interface Topic {
   id: string; // 폴더명 (예: "Few-Shot_Learning")
   label: string; // 표시명 (예: "Few-Shot Learning")
-  uri: vscode.Uri;
+  path: string; // 폴더 절대 경로
 }
 
 interface PaperMeta {
@@ -265,14 +272,25 @@ interface PaperMeta {
 }
 
 interface Paper {
+  id: string; // `${topicId}/${stem}`
   topicId: string;
   stem: string; // 파일명 (확장자 제외)
   meta: PaperMeta;
-  jsonUri?: vscode.Uri;
-  mdUri?: vscode.Uri;
+  jsonPath?: string;
+  mdPath?: string;
   metaError?: string; // JSON 파싱 실패 사유
 }
 ```
+
+데이터 계층의 공개 API (P1 구현):
+
+| 모듈 | API |
+| --- | --- |
+| `readonlyFs.ts` | `ReadonlyFileSystem { readText, readDir, stat }`, `nodeReadonlyFs`. 오류는 `DataError(kind: notFound \| notDirectory \| io)`로 바꿔 던진다. |
+| `topicRepository.ts` | `list()`, `get(id)`, `reload()` |
+| `paperRepository.ts` | `list(topic)`, `isLoaded(topicId)`, `reloadTopic(topicId)`, `reloadAll()`, `reloadPaper(topic, stem)`, `readMarkdown(paper)` |
+| `paperMeta.ts` | `parseMetaJson`, `parseMarkdownHeader`(md의 H1과 "저자 (연도)" 줄), `decodeStemUrl`(base64 파일 이름 → URL), `fallbackMeta` |
+| `paperSort.ts` | `sortPapers(papers, mode)` |
 
 ### 5.3 데이터 흐름
 
@@ -294,8 +312,8 @@ Reload 버튼(사용자) ── 범위(전체 / 주제 / 논문)의 캐시 무�
 
 ### 5.4 성능 기준
 
-- 시작할 때 읽는 것은 최상위 `readdir` 1회뿐이다. 주제 112개는 즉시 표시된다.
-- 주제를 처음 열면 json을 최대 617개 읽는다. 목표는 **500ms 이하**다(동시성 제한 병렬 읽기, 결과 캐시).
+- 시작할 때 읽는 것은 최상위 `readdir` 1회뿐이다. 주제 108개는 즉시 표시된다.
+- 주제를 처음 열면 json을 최대 275개 읽는다. 목표는 **500ms 이하**다(동시성 제한 병렬 읽기, 결과 캐시).
 - md 렌더링 목표는 120K자 기준 **200ms 이하**다. 렌더링 결과는 LRU 캐시(20개)에 두고, Reload 시 해당 항목을 비운다.
 - 확장은 `onView:arxivjs.topics`와 명령 실행 시에만 활성화한다. `*` 활성화는 쓰지 않는다.
 
@@ -349,9 +367,9 @@ Reload 버튼(사용자) ── 범위(전체 / 주제 / 논문)의 캐시 무�
 | ------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----- |
 | **P0. 스캐폴딩**    | `yo code`(TS) 생성, esbuild·ESLint(읽기 전용 규칙 포함)·vitest 설정, fixture 데이터 구성                    | `F5`로 빈 확장이 실행된다. 린트와 테스트 파이프라인이 통과한다.                                      | 0.5일 |
 | **P1. 데이터 계층** | `readonlyFs`, `TopicRepository`, `PaperRepository`, 모델, 오류 처리                                         | §6.1–6.3을 단위 테스트로 검증한다(하이픈 폴더, 누락 파일, 파싱 실패, 정렬).                          | 1.5일 |
-| **P2. 주제 트리**   | Activity Bar 컨테이너, TreeView, Welcome View, `selectDataFolder`, Reload 버튼(전체·주제), 툴팁·description | 실데이터로 주제 112개가 표시된다. 주제를 펼치면 논문 목록이 나온다. Reload 하면 다시 읽는다.         | 1일   |
+| **P2. 주제 트리**   | Activity Bar 컨테이너, TreeView, Welcome View, `selectDataFolder`, Reload 버튼(전체·주제), 툴팁·description | 실데이터로 주제 108개가 표시된다. 주제를 펼치면 논문 목록이 나온다. Reload 하면 다시 읽는다.         | 1일   |
 | **P3. 논문 렌더링** | Paper 패널, markdown-it + KaTeX, CSP·nonce, 메타 헤더, 목차, 외부 링크                                      | 수식·표·`<think>` 텍스트·원격 이미지가 들어간 샘플 문서가 올바르게 표시된다.                         | 1.5일 |
-| **P4. 주제 패널**   | Topic 패널(표, 정렬, 필터, abstract 펼치기, Reload) 및 Paper 패널 연동·Reload                               | 617개 논문 주제에서 정렬과 필터가 끊김 없이 동작한다. fixture 복사본을 바꾼 뒤 각 Reload로 반영된다. | 1일   |
+| **P4. 주제 패널**   | Topic 패널(표, 정렬, 필터, abstract 펼치기, Reload) 및 Paper 패널 연동·Reload                               | 275개 논문 주제에서 정렬과 필터가 끊김 없이 동작한다. fixture 복사본을 바꾼 뒤 각 Reload로 반영된다. | 1일   |
 | **P5. 품질·배포**   | 통합 테스트(읽기 전용 검증 포함), 성능 측정(§5.4), README, 아이콘, `vsce package`                           | `.vsix`가 생성된다. 모든 테스트와 성능 기준을 통과한다.                                              | 1일   |
 
 **합계: 약 6.5일** (1인 기준)
