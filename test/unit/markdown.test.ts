@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PaperRenderer, slugify, stripLeadingHeader } from '../../src/render/markdown';
 
 const DATA = path.resolve(__dirname, '../fixtures/sample-data');
@@ -24,6 +24,18 @@ describe('수식 (KaTeX)', () => {
 
   it('수식 문법 오류는 예외 없이 katex-error로 남긴다', () => {
     expect(render('닫히지 않은 $x^{$ 수식').html).toContain('katex-error');
+  });
+
+  it('수식 안의 한글은 그대로 그리고 콘솔 경고를 내지 않는다 (strict: ignore)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const { html } = render('정확도 $x_{최대} = 1$ 이다');
+      expect(html).toContain('class="katex"');
+      expect(html).not.toContain('katex-error');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('fixture 문서의 수식을 모두 예외 없이 렌더링한다', () => {

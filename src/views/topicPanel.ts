@@ -6,7 +6,7 @@ import { createNonce, type Notice } from '../render/html';
 import { PaperRenderer } from '../render/markdown';
 import { buildTopicHtml, toTopicRow } from '../render/topicHtml';
 import type { Logger } from '../util/logger';
-import { openExternalUrl } from './paperPanel';
+import { activeColumn, openExternalUrl } from './paperPanel';
 
 export const TOPIC_PANEL_TYPE = 'arxivjs.topic';
 
@@ -29,13 +29,23 @@ export class TopicPanelManager implements vscode.Disposable {
   private topic: Topic | undefined;
   private papers = new Map<string, Paper>();
   private renderSeq = 0;
-  private readonly renderer = new PaperRenderer();
+  private createdColumn: vscode.ViewColumn | undefined;
+  /** 초록을 처음 펼칠 때 만든다 (확장 활성화를 가볍게). */
+  private rendererInstance: PaperRenderer | undefined;
+  private get renderer(): PaperRenderer {
+    return (this.rendererInstance ??= new PaperRenderer());
+  }
 
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly host: TopicPanelHost,
     private readonly log: Logger,
   ) {}
+
+  /** Topic 패널이 있는 편집기 그룹 (논문을 열 위치의 기준). 만든 직후에는 만들 때의 그룹 번호를 쓴다. */
+  get viewColumn(): vscode.ViewColumn | undefined {
+    return this.panel ? (this.panel.viewColumn ?? this.createdColumn) : undefined;
+  }
 
   /** 열린 주제 id (테스트용) */
   get currentTopicId(): string | undefined {
@@ -76,10 +86,11 @@ export class TopicPanelManager implements vscode.Disposable {
   }
 
   private createPanel(): vscode.WebviewPanel {
+    this.createdColumn = activeColumn();
     const panel = vscode.window.createWebviewPanel(
       TOPIC_PANEL_TYPE,
       this.topic?.label ?? 'Topic',
-      { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
+      { viewColumn: this.createdColumn, preserveFocus: false },
       {
         enableScripts: true,
         enableFindWidget: true,

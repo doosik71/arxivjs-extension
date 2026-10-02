@@ -1,7 +1,7 @@
 import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 
-const EXTENSION_ID = 'arxivjs.arxivjs-viewer';
+const EXTENSION_ID = 'doosik71.arxivjs-viewer';
 
 suite('ArxivJS Viewer (smoke)', () => {
   test('확장이 설치되어 있고 활성화된다', async () => {
@@ -15,6 +15,8 @@ suite('ArxivJS Viewer (smoke)', () => {
     const config = vscode.workspace.getConfiguration('arxivjs');
     assert.strictEqual(config.get('dataFolder'), '');
     assert.strictEqual(config.get('paperSort'), 'citation');
-    assert.strictEqual(config.get('openInNewTab'), false);
+    assert.strictEqual(config.get('openInNewTab'), true);
+    assert.strictEqual(config.get('paperPanelLocation'), 'sameGroup');
+    assert.strictEqual(config.get('openHomeOnStartup'), true);
   });
 });

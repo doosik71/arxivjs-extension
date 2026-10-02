@@ -2,10 +2,18 @@
   "name": "arxivjs-viewer",
   "displayName": "ArxivJS Viewer",
   "description": "arxivjs 데이터 폴더의 논문을 읽기 전용으로 열람한다.",
-  "version": "0.0.1",
-  "publisher": "arxivjs",
-  "license": "UNLICENSED",
-  "private": true,
+  "version": "0.2.0",
+  "publisher": "doosik71",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/doosik71/arxivjs-extension.git"
+  },
+  "homepage": "https://github.com/doosik71/arxivjs-extension#readme",
+  "bugs": {
+    "url": "https://github.com/doosik71/arxivjs-extension/issues"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -81,12 +89,36 @@
         },
         "arxivjs.openInNewTab": {
           "type": "boolean",
-          "default": false,
-          "description": "논문마다 새 탭을 연다. false이면 패널 하나를 재사용한다."
+          "default": true,
+          "description": "논문을 열 때마다 새 탭을 연다. false이면 논문 탭 하나를 재사용한다."
+        },
+        "arxivjs.paperPanelLocation": {
+          "type": "string",
+          "enum": [
+            "sameGroup",
+            "beside"
+          ],
+          "enumDescriptions": [
+            "논문 목록(Topic 패널)과 같은 편집기 그룹에 탭으로 연다. 화면을 나누지 않는다.",
+            "논문 목록 옆에 편집기 그룹을 나눠서 연다. 목록과 논문을 함께 볼 수 있다."
+          ],
+          "default": "sameGroup",
+          "description": "논문을 열 편집기 그룹"
+        },
+        "arxivjs.openHomeOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "ArxivJS 뷰를 처음 열 때 주제 목록(홈) 페이지를 함께 연다."
         }
       }
     },
     "commands": [
+      {
+        "command": "arxivjs.openHome",
+        "title": "주제 목록(홈) 열기",
+        "category": "ArxivJS",
+        "icon": "$(home)"
+      },
       {
         "command": "arxivjs.selectDataFolder",
         "title": "데이터 폴더 선택",
@@ -144,6 +176,11 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "arxivjs.openHome",
+          "when": "view == arxivjs.topics",
+          "group": "navigation@0"
+        },
         {
           "command": "arxivjs.reload",
           "when": "view == arxivjs.topics",
@@ -217,10 +254,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pretest:integration": "node esbuild.mjs && tsc -p test/integration",
-    "test:integration": "vscode-test",
+    "test:integration": "node scripts/run-integration.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "package": "vsce package --no-dependencies",
-    "vscode:prepublish": "node esbuild.mjs --production"
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "bench": "esbuild scripts/bench.ts --bundle --platform=node --outfile=out/bench.js --log-level=warning && node out/bench.js",
+    "icon": "node scripts/make-icon.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

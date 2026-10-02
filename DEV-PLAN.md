@@ -163,29 +163,52 @@ md만 있는 2건은 파일명이 base64로 인코딩된 URL이다(예: `aHR0cDo
 **Reload 정책:** 파일 변경을 자동으로 감지하지 않는다(`FileSystemWatcher`를 쓰지 않는다). 한 번 읽은 데이터는 Reload 전까지 캐시를 그대로 쓴다. 데이터를 다시 읽는 시점은 사용자가 Reload를 누를 때뿐이다.
 
 - 논문 노드의 `description`에는 `연도 · 인용수`를 표시한다. md가 없으면 아이콘을 다르게 표시한다.
-- 패널 재사용: Topic 패널과 Paper 패널은 기본적으로 각각 1개만 유지하고 내용만 바꾼다(preview 모드). 설정 `arxivjs.openInNewTab`을 켜면 논문마다 새 탭을 연다.
+- 패널 재사용: 홈과 Topic 패널은 각각 1개만 유지하고 내용만 바꾼다.
+- Paper 패널은 기본으로 논문마다 새 탭을 연다(`arxivjs.openInNewTab`, 기본 `true`). 같은 논문을 다시 열면 기존 탭으로 간다. 설정을 끄면 탭 하나를 재사용한다.
+- Paper 패널을 열 편집기 그룹(`arxivjs.paperPanelLocation`):
+  - `sameGroup`(기본): 논문 목록(Topic 패널)과 같은 그룹에 탭으로 연다. 화면이 좁은 모니터를 고려해 기본값으로 정했다.
+  - `beside`: 목록 오른쪽 그룹에 연다. 논문은 그 그룹 하나에 모인다.
+  - `ViewColumn.Active`와 `ViewColumn.Beside`는 쓰지 않는다. 둘 다 그때의 활성 그룹을 기준으로 하는데, 논문을 열면 포커스가 논문 쪽으로 옮겨 가서 `beside`일 때 클릭할 때마다 화면이 계속 나뉜다. 그래서 그룹 번호를 직접 정한다.
+
+### 3.2.1 홈 (주제 목록 페이지)
+
+- ArxivJS 뷰를 처음 열 때 편집기 영역에 홈을 연다. 설정 `arxivjs.openHomeOnStartup`(기본 `true`)으로 끌 수 있다. TOPICS 제목줄의 `[🏠]` 버튼이나 명령 `arxivjs.openHome`으로 다시 연다.
+- 모든 주제를 카드 목록으로 보여준다. 각 카드에는 논문 수가 붙는다.
+  - 첫 화면은 주제 목록(최상위 `readdir` 1회)만으로 바로 그린다.
+  - 논문 수는 그 뒤에 비동기로 센다. 폴더 목록만 읽는 `PaperRepository.count`를 동시에 16개씩 돌리고, 결과를 50ms마다 묶어 webview로 보낸다.
+  - webview는 도착한 수를 채운다. "논문 수순" 정렬일 때만 잠깐 모았다가 다시 정렬한다.
+  - webview가 준비되기 전에 보낸 메시지는 사라질 수 있다. 그래서 webview가 `ready`를 보내면 지금까지 센 수를 한 번에 다시 보낸다.
+  - Reload나 데이터 폴더 변경으로 다시 그리면, 진행 중이던 개수 세기는 버린다.
+- 필터는 표시 이름과 폴더 이름에서 찾는다. 모든 낱말이 들어 있어야 하고, 대소문자는 무시한다.
+  - `Enter`: 보이는 첫 주제를 연다.
+  - `↓`: 첫 주제로 포커스를 옮긴다.
+- 정렬은 이름순과 논문 수순 두 가지다. 주제를 누르면 Topic 패널이 열린다.
+- Reload(전체·주제·논문)와 데이터 폴더 변경을 모두 반영한다. 데이터 폴더가 바뀌어도 홈은 닫지 않고 새 폴더로 다시 그린다.
 
 ### 3.3 명령 (Command Palette)
 
-| ID                         | 제목                                                      |
-| -------------------------- | --------------------------------------------------------- |
-| `arxivjs.selectDataFolder` | ArxivJS: 데이터 폴더 선택                                 |
-| `arxivjs.reload`           | ArxivJS: Reload (전체 다시 읽기)                          |
-| `arxivjs.reloadTopic`      | ArxivJS: Reload Topic (주제 노드 인라인 버튼, Topic 패널) |
-| `arxivjs.reloadPaper`      | ArxivJS: Reload Paper (Paper 패널)                        |
-| `arxivjs.openSettings`     | ArxivJS: 설정 열기 (TOPICS 제목줄 `[⚙]`)                  |
-| `arxivjs.openTopic`        | ArxivJS: 주제 열기 (QuickPick)                            |
-| `arxivjs.openPaper`        | ArxivJS: 논문 열기 (QuickPick, 현재 주제)                 |
-| `arxivjs.openExternal`     | ArxivJS: 원문 URL 열기                                    |
-| `arxivjs.copyCitationInfo` | ArxivJS: 논문 정보 복사 (클립보드)                        |
+| ID | 제목 |
+| --- | --- |
+| `arxivjs.openHome` | ArxivJS: 주제 목록(홈) 열기 (TOPICS 제목줄 `[🏠]`) |
+| `arxivjs.selectDataFolder` | ArxivJS: 데이터 폴더 선택 |
+| `arxivjs.reload` | ArxivJS: Reload (전체 다시 읽기) |
+| `arxivjs.reloadTopic` | ArxivJS: Reload Topic (주제 노드 인라인 버튼, Topic 패널) |
+| `arxivjs.reloadPaper` | ArxivJS: Reload Paper (Paper 패널) |
+| `arxivjs.openSettings` | ArxivJS: 설정 열기 (TOPICS 제목줄 `[⚙]`) |
+| `arxivjs.openTopic` | ArxivJS: 주제 열기 (QuickPick) |
+| `arxivjs.openPaper` | ArxivJS: 논문 열기 (QuickPick: 주제 → 논문) |
+| `arxivjs.openExternal` | ArxivJS: 원문 URL 열기 |
+| `arxivjs.copyCitationInfo` | ArxivJS: 논문 정보 복사 (클립보드) |
 
 ### 3.4 설정 (`contributes.configuration`)
 
-| 키                     | 타입    | 기본값     | 설명                                     |
-| ---------------------- | ------- | ---------- | ---------------------------------------- |
-| `arxivjs.dataFolder`   | string  | `""`       | 데이터 폴더 절대 경로. `scope: machine`. |
-| `arxivjs.paperSort`    | enum    | `citation` | `citation` \| `year` \| `title`          |
-| `arxivjs.openInNewTab` | boolean | `false`    | 논문마다 새 탭을 연다.                   |
+| 키 | 타입 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| `arxivjs.dataFolder` | string | `""` | 데이터 폴더 절대 경로. `scope: machine`. |
+| `arxivjs.paperSort` | enum | `citation` | `citation` \| `year` \| `title` |
+| `arxivjs.openInNewTab` | boolean | `true` | 논문마다 새 탭을 연다. |
+| `arxivjs.paperPanelLocation` | enum | `sameGroup` | `sameGroup` \| `beside` (§3.2) |
+| `arxivjs.openHomeOnStartup` | boolean | `true` | ArxivJS 뷰를 처음 열 때 홈을 연다 (§3.2.1) |
 
 `dataFolder`가 비어 있거나 경로가 없으면 TreeView에 **Welcome View**를 보여준다. 여기에 "데이터 폴더 선택" 버튼을 둔다.
 
@@ -399,3 +422,49 @@ Reload 버튼(사용자) ── 범위(전체 / 주제 / 논문)의 캐시 무�
 | R3  | 수식 문법이 다양하다(`\begin{...}`, 매크로 미정의 등).               | KaTeX `throwOnError:false`, 필요하면 `macros` 설정 추가                               |
 | R4  | md가 없는 논문 182건, json이 없는 md 2건(base64 파일명)              | §2.4의 처리 방식. 데이터 앱 쪽에서 정리할지 확인이 필요하다.                          |
 | R5  | 원격 이미지를 불러오면 외부 네트워크 요청이 생긴다.                  | CSP `img-src https:`로 허용한다. 필요하면 설정으로 차단할 수 있게 하는 것을 검토한다. |
+
+## 11. 진행 현황 (2026-10-02 기준)
+
+P0–P5를 모두 마쳤다. 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략을 더했다.
+
+게시 정보는 다음과 같다.
+
+- 라이선스: MIT (`LICENSE`)
+- 저장소: <https://github.com/doosik71/arxivjs-extension>
+- 게시자: [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)
+- 확장 ID: `doosik71.arxivjs-viewer`
+
+| 단계 | 상태 | 결과 |
+| --- | --- | --- |
+| P0 스캐폴딩 | 완료 | esbuild, ESLint(읽기 전용 규칙), vitest, fixture |
+| P1 데이터 계층 | 완료 | `readonlyFs`, 저장소, 메타 파싱, 정렬, 재시도 |
+| P2 주제 트리 | 완료 | TreeView, Welcome View, Reload(전체·주제), 툴팁 |
+| P3 논문 렌더링 | 완료 | Paper 패널, KaTeX, CSP·nonce, 메타 헤더, 목차 |
+| P4 주제 패널 | 완료 | Topic 패널(정렬, 필터, 초록), 패널 간 Reload 연동 |
+| P5 품질·배포 | 완료 | 읽기 전용 검증 통합 테스트, 성능 측정, 아이콘, `vsce package` |
+
+### 검증 결과
+
+- 단위 테스트(vitest)와 통합 테스트(VS Code 최신 안정판)가 모두 통과한다.
+- 통합 테스트는 fixture를 OS 수준 읽기 전용으로 바꾼 뒤 실행한다. 테스트 전후 fixture의 경로, 크기, mtime, SHA-256이 같다.
+- 가드 자체도 검증했다.
+  - 기존 파일에 쓰려고 하면 `EPERM`으로 막힌다.
+  - 새 파일이 생기면 비교에서 잡혀 종료 코드 2로 실패한다.
+- 실데이터 성능 (`npm run bench -- <실데이터>`, 읽기만 함):
+
+| 항목 | 측정 | 목표 |
+| --- | --- | --- |
+| 주제 목록 (108개) | 1.9ms | 100ms 이하 |
+| 가장 큰 주제 첫 로딩 (275편) | 9.2ms | 500ms 이하 |
+| 가장 큰 md 렌더링 (118,766자) | 3.5ms | 200ms 이하 |
+| md 4,427개 전체 렌더링 | p50 0.9ms, p95 2.6ms, 렌더링 예외 0건 | — |
+
+- 렌더링 결과로 KaTeX 옵션을 하나 바꿨다. 기본 `strict: 'warn'`은 수식 안의 한글마다 콘솔 경고를 냈다(실데이터 686건). 그래서 `strict: 'ignore'`로 바꿨다.
+- 배포에 들어가는 의존성의 `npm audit` 결과는 취약점 0건이다.
+
+### 남은 확인 사항
+
+| 항목 | 현재 | 필요한 결정 |
+| --- | --- | --- |
+| 최소 버전 검증 | 1.90.0 다운로드가 이 환경에서 네트워크 오류로 실패 | `VSCODE_TEST_VERSION=1.90.0 npm run test:integration`을 네트워크가 되는 곳에서 실행 |
+| 화면 확인 | 테스트는 HTML 문자열까지만 검증한다 | `F5`로 실제 화면(KaTeX 폰트, 고정 헤더, 다크 테마)을 확인 |

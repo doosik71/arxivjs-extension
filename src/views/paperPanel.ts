@@ -19,6 +19,21 @@ interface PanelEntry {
   paper: Paper;
   /** 늦게 끝난 이전 렌더링이 최신 화면을 덮어쓰지 않게 한다. */
   renderSeq: number;
+  /** 만들 때 지정한 그룹 번호. 만든 직후에는 panel.viewColumn이 아직 없을 수 있다. */
+  createdColumn: vscode.ViewColumn;
+}
+
+/** 활성 편집기 그룹 번호 (편집기가 하나도 없으면 1) */
+export function activeColumn(): vscode.ViewColumn {
+  return vscode.window.tabGroups.activeTabGroup?.viewColumn ?? vscode.ViewColumn.One;
+}
+
+const columnOf = (e: PanelEntry): vscode.ViewColumn => e.panel.viewColumn ?? e.createdColumn;
+
+export interface PaperPlacement {
+  location: 'sameGroup' | 'beside';
+  /** 기준이 되는 편집기 그룹 (논문 목록이 있는 그룹) */
+  anchor?: vscode.ViewColumn;
 }
 
 export interface PaperPanelHost {
@@ -32,7 +47,11 @@ export interface PaperPanelHost {
 /** Paper 패널 (DEV-PLAN §3.2, §6.4). 기본은 패널 하나를 재사용하고, openInNewTab이면 논문마다 연다. */
 export class PaperPanelManager implements vscode.Disposable {
   private readonly entries = new Map<string, PanelEntry>();
-  private readonly renderer = new PaperRenderer();
+  /** markdown-it·KaTeX 준비는 첫 논문을 열 때 한다 (확장 활성화를 가볍게). */
+  private rendererInstance: PaperRenderer | undefined;
+  private get renderer(): PaperRenderer {
+    return (this.rendererInstance ??= new PaperRenderer());
+  }
   private activeEntry: PanelEntry | undefined;
 
   constructor(
@@ -57,8 +76,15 @@ export class PaperPanelManager implements vscode.Disposable {
     return [...this.entries.values()].find((e) => e.paper.id === paperId)?.panel.webview.html;
   }
 
-  /** column: 새 패널을 열 위치 (기본: 현재 편집기 그룹). 이미 열린 패널은 그 자리에서 바꾼다. */
-  async show(topic: Topic, paper: Paper, column: vscode.ViewColumn = vscode.ViewColumn.Active): Promise<void> {
+  /**
+   * 논문을 연다. 이미 열린 패널은 그 자리에서 내용을 바꾼다.
+   * placement.location (설정 arxivjs.paperPanelLocation)
+   * - sameGroup: anchor 그룹(없으면 활성 그룹)에 탭으로 연다.
+   * - beside: 이미 논문이 열린 다른 그룹이 있으면 그 그룹에, 없으면 anchor 바로 오른쪽 그룹에 연다.
+   *   ViewColumn.Beside는 활성 그룹 기준이라, 논문을 열 때마다 포커스가 옮겨 가 화면이 계속 나뉜다. 그래서 쓰지 않는다.
+   * anchor: 논문 목록(Topic 패널)이 있는 그룹. 트리에서 열 때는 없다.
+   */
+  async show(topic: Topic, paper: Paper, placement: PaperPlacement = { location: 'sameGroup' }): Promise<void> {
     const key = this.host.openInNewTab() ? paper.id : PREVIEW_KEY;
     let entry = this.entries.get(key);
     if (entry) {
@@ -66,9 +92,19 @@ export class PaperPanelManager implements vscode.Disposable {
       entry.paper = paper;
       entry.panel.reveal(undefined, false);
     } else {
-      entry = this.createEntry(key, topic, paper, column);
+      entry = this.createEntry(key, topic, paper, this.columnFor(placement));
     }
     await this.render(entry);
+  }
+
+  /** 새 패널을 열 그룹 번호. 숫자로 정해서 Active/Beside가 포커스에 따라 달라지는 것을 피한다. */
+  private columnFor({ location, anchor }: PaperPlacement): vscode.ViewColumn {
+    const base = anchor ?? activeColumn();
+    if (location === 'sameGroup') {
+      return base;
+    }
+    const existing = [...this.entries.values()].map(columnOf).find((c) => c !== undefined && c !== base);
+    return existing ?? ((base + 1) as vscode.ViewColumn);
   }
 
   /** 패널의 논문을 디스크에서 다시 읽는다. */
@@ -114,7 +150,7 @@ export class PaperPanelManager implements vscode.Disposable {
         localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media'), vscode.Uri.joinPath(this.extensionUri, 'dist', 'katex')],
       },
     );
-    const entry: PanelEntry = { key, panel, topic, paper, renderSeq: 0 };
+    const entry: PanelEntry = { key, panel, topic, paper, renderSeq: 0, createdColumn: column };
     this.entries.set(key, entry);
     this.activeEntry = entry;
 

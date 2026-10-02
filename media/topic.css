@@ -47,7 +47,13 @@ button.sort.active { color: var(--vscode-textLink-foreground); }
 button.sort.active::after { content: ' ' attr(data-dir); font-size: 0.8em; }
 
 button.title { text-align: left; font-size: inherit; font-weight: 600; }
-.papers .authors { margin-top: 2px; font-size: 0.9em; color: var(--vscode-descriptionForeground); }
+/* 저자: 한 줄까지만, 넘치면 "…" 뒤에 "(N명)" (topic.js가 잘린 줄에 .truncated를 붙인다) */
+.papers .authors { display: flex; gap: 6px; margin-top: 2px; font-size: 0.9em; color: var(--vscode-descriptionForeground); }
+.papers .authors-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.papers .authors-count { flex: none; display: none; font-variant-numeric: tabular-nums; }
+.papers .authors.truncated .authors-count { display: inline; }
+/* 제목 칸이 긴 저자 줄 때문에 넓어지지 않게 한다 */
+.papers td.col-title { max-width: 0; width: 100%; }
 .papers .badge, .tag { margin-left: 6px; vertical-align: 1px; }
 .tag {
   padding: 0 5px;

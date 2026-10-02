@@ -6,6 +6,7 @@ import type { Paper, Topic } from './data/models';
 import { nodeReadonlyFs } from './data/readonlyFs';
 import { createLogger } from './util/log';
 import { citationText, paperDescription } from './views/format';
+import { HomePanelManager } from './views/homePanel';
 import { openExternalUrl, PaperPanelManager } from './views/paperPanel';
 import { TopicPanelManager } from './views/topicPanel';
 import { TOPICS_VIEW_ID, TopicTreeProvider, type TreeNode } from './views/topicTreeProvider';
@@ -15,6 +16,7 @@ export interface ArxivjsApi {
   readonly tree: TopicTreeProvider;
   readonly panels: PaperPanelManager;
   readonly topicPanel: TopicPanelManager;
+  readonly home: HomePanelManager;
   getLibrary(): Library | undefined;
 }
 
@@ -60,23 +62,29 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       onPaperReloaded: (topicId) => {
         tree.refreshTopic(topicId);
         void topicPanel.refresh(topicId);
+        void home.refresh();
       },
     },
     log,
   );
 
-  /** 전체 Reload: 캐시를 비우고 트리와 Topic 패널을 다시 그린다. */
+  /** 논문을 열 위치 (설정 arxivjs.paperPanelLocation). anchor는 논문 목록이 있는 편집기 그룹 */
+  const paperPlacement = (anchor?: vscode.ViewColumn) => ({ location: config.paperPanelLocation, anchor });
+
+  /** 전체 Reload: 캐시를 비우고 트리, 홈, Topic 패널을 다시 그린다. */
   const reloadAll = () => {
     log.info('Reload: 전체');
     tree.reloadAll();
     void topicPanel.refresh();
+    void home.refresh();
   };
 
-  /** 주제 Reload: 그 주제의 캐시를 비우고 트리 노드와 (보고 있으면) Topic 패널을 다시 그린다. */
+  /** 주제 Reload: 그 주제의 캐시를 비우고 트리 노드, 홈, (보고 있으면) Topic 패널을 다시 그린다. */
   const reloadTopic = (topicId: string) => {
     log.info(`Reload: 주제 ${topicId}`);
     tree.reloadTopic(topicId);
     void topicPanel.refresh(topicId);
+    void home.refresh();
   };
 
   const topicPanel = new TopicPanelManager(
@@ -84,12 +92,32 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     {
       getLibrary: () => library,
       defaultSort: () => config.paperSort,
-      // Topic 패널 옆에 Paper 패널을 열어 표를 계속 볼 수 있게 한다.
-      openPaper: (topic, paper) => void panels.show(topic, paper, vscode.ViewColumn.Beside),
+      openPaper: (topic, paper) => void panels.show(topic, paper, paperPlacement(topicPanel.viewColumn)),
       reloadTopic,
     },
     log,
   );
+
+  const home = new HomePanelManager(
+    context.extensionUri,
+    {
+      getLibrary: () => library,
+      configuredFolder: () => config.dataFolderRaw,
+      openTopic: (topic) => void topicPanel.show(topic),
+      selectDataFolder: () => void vscode.commands.executeCommand('arxivjs.selectDataFolder'),
+      reloadAll,
+    },
+    log,
+  );
+
+  /** ArxivJS 뷰를 처음 열 때 홈을 연다 (설정 arxivjs.openHomeOnStartup). 세션에 한 번만. */
+  let homeOpenedOnStartup = false;
+  const openHomeOnStartup = () => {
+    if (!homeOpenedOnStartup && config.openHomeOnStartup && !home.isOpen) {
+      homeOpenedOnStartup = true;
+      void home.show({ preserveFocus: true });
+    }
+  };
 
   /** 명령 대상 논문: 인자로 받은 트리 노드 → 활성 Paper 패널 → 트리에서 선택한 논문 */
   const resolvePaper = (node?: TreeNode): PaperTarget | undefined => {
@@ -132,6 +160,15 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     treeView,
     panels,
     topicPanel,
+    home,
+
+    treeView.onDidChangeVisibility((e) => {
+      if (e.visible) {
+        openHomeOnStartup();
+      }
+    }),
+
+    vscode.commands.registerCommand('arxivjs.openHome', () => home.show()),
 
     vscode.commands.registerCommand('arxivjs.selectDataFolder', async () => {
       const picked = await vscode.window.showOpenDialog({
@@ -173,7 +210,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     vscode.commands.registerCommand('arxivjs.openPaper', async (node?: TreeNode) => {
       const target = node?.kind === 'paper' ? resolvePaper(node) : await pickPaper();
       if (target) {
-        await panels.show(target.topic, target.paper);
+        await panels.show(target.topic, target.paper, paperPlacement());
       }
     }),
 
@@ -210,14 +247,20 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         createLibrary();
         updateViewDescription();
         tree.reloadAll();
+        void home.refresh(); // 홈은 닫지 않고 새 데이터 폴더의 주제로 다시 그린다.
       } else if (config.paperSort !== previous.paperSort) {
         tree.refresh(); // 캐시는 그대로 두고 정렬만 다시 한다.
       }
     }),
   );
 
+  // 뷰가 보여서 활성화된 경우 (onDidChangeVisibility가 이미 지나갔을 수 있다)
+  if (treeView.visible) {
+    openHomeOnStartup();
+  }
+
   log.info('ArxivJS Viewer activated');
-  return { tree, panels, topicPanel, getLibrary: () => library };
+  return { tree, panels, topicPanel, home, getLibrary: () => library };
 }
 
 export function deactivate(): void {}

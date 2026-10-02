@@ -1,5 +1,6 @@
 // Topic 패널 HTML 템플릿 (vscode 비의존). 표는 webview 스크립트가 JSON 데이터로 그린다.
 import type { Paper, PaperSort } from '../data/models';
+import { countAuthors } from '../views/format';
 import { contentSecurityPolicy, escapeHtml, scriptTags, type Notice, type WebviewResources } from './html';
 
 /** webview로 보내는 논문 한 줄. 문자열은 스크립트가 textContent로 넣으므로 여기서 이스케이프하지 않는다. */
@@ -7,6 +8,8 @@ export interface TopicRow {
   id: string;
   title: string;
   authors: string;
+  /** 저자 수 (저자 줄이 잘렸을 때 표시) */
+  authorCount: number;
   year?: number;
   citation?: number;
   source?: string;
@@ -30,6 +33,7 @@ export function toTopicRow(paper: Paper): TopicRow {
     id: paper.id,
     title: meta.title,
     authors: meta.authors,
+    authorCount: countAuthors(meta.authors),
     year: meta.year,
     citation: meta.citation,
     source: meta.source,

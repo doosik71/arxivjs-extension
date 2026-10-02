@@ -8,7 +8,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**�
 
 이 확장은 데이터 폴더의 파일을 **절대 수정하지 않는다.** 데이터 추가와 관리는 다른 앱(arxivjs)이 맡는다.
 
-> 상태: 개발 중. 설계와 일정은 [DEV-PLAN.md](DEV-PLAN.md)를 참고한다.
+> 현재 버전: 0.1.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
 ## 목차
 
@@ -30,10 +30,11 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**�
     - [개발 환경 준비](#개발-환경-준비)
     - [로컬에서 실행과 디버깅](#로컬에서-실행과-디버깅)
     - [테스트](#테스트)
+    - [성능 측정](#성능-측정)
     - [패키징 (.vsix 만들기)](#패키징-vsix-만들기)
     - [Marketplace에 확장 등록 (게시)](#marketplace에-확장-등록-게시)
       - [1단계. Azure DevOps 조직과 Personal Access Token(PAT) 만들기](#1단계-azure-devops-조직과-personal-access-tokenpat-만들기)
-      - [2단계. 게시자(Publisher) 만들기](#2단계-게시자publisher-만들기)
+      - [2단계. 게시자(Publisher) 확인](#2단계-게시자publisher-확인)
       - [3단계. vsce 로그인](#3단계-vsce-로그인)
       - [4단계. 게시](#4단계-게시)
     - [버전 업데이트와 재게시](#버전-업데이트와-재게시)
@@ -54,8 +55,10 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**�
 #### 방법 1. Marketplace에서 설치
 
 1. VS Code 왼쪽 Activity Bar에서 **Extensions**(`Ctrl+Shift+X`)를 연다.
-2. `ArxivJS Viewer`를 검색한다.
+2. `ArxivJS Viewer`를 검색한다. 게시자는 [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)이다.
 3. **Install**을 누른다.
+
+명령줄에서는 `code --install-extension doosik71.arxivjs-viewer`로 설치한다.
 
 #### 방법 2. `.vsix` 파일로 설치
 
@@ -76,7 +79,7 @@ code --install-extension arxivjs-viewer-0.1.0.vsix
 Extensions 뷰에서 `ArxivJS Viewer`를 찾아 **Uninstall**을 누른다. 명령줄에서는 다음과 같이 한다.
 
 ```bash
-code --uninstall-extension <publisher>.arxivjs-viewer
+code --uninstall-extension doosik71.arxivjs-viewer
 ```
 
 확장을 제거해도 데이터 폴더에는 아무 영향이 없다.
@@ -100,7 +103,7 @@ code --uninstall-extension <publisher>.arxivjs-viewer
 
 ```text
 ArxivJS (Activity Bar)
-└─ TOPICS                    [⟳ Reload] [📂 폴더 선택] [⚙ 설정]
+└─ TOPICS          [🏠 홈] [⟳ Reload] [📂 폴더 선택] [⚙ 설정]
    ▸ AI Healthcare
    ▾ Few-Shot Learning    (87)    ← 펼치면 논문 목록과 논문 수
       A Closer Look at ...   2019 · 2,737
@@ -108,8 +111,17 @@ ArxivJS (Activity Bar)
       ...
 ```
 
-1. **주제 보기**: TOPICS 뷰에 데이터 폴더의 주제가 나타난다. 폴더 이름의 `_`는 공백으로 표시한다(`Few-Shot_Learning` → `Few-Shot Learning`).
-2. **논문 목록 보기**
+1. **주제 목록(홈)**
+   - ArxivJS 뷰를 처음 열면 편집기 영역에 **홈** 페이지가 함께 열린다. 데이터 폴더의 모든 주제가 논문 수와 함께 나온다. 자동으로 열리지 않게 하려면 설정 `arxivjs.openHomeOnStartup`을 끈다.
+   - 다시 열려면 TOPICS 제목줄의 `🏠` 버튼을 누르거나 `ArxivJS: 주제 목록(홈) 열기`를 실행한다.
+   - **필터**: 검색 칸에 낱말을 입력하면 이름에 그 낱말이 모두 들어 있는 주제만 남는다. 표시 이름과 폴더 이름(`Large_Language_Model` 같은) 모두에서 찾는다.
+     - `Enter`: 보이는 첫 주제를 연다.
+     - `↓`: 첫 주제로 포커스를 옮긴다.
+   - **정렬**: `이름순` 또는 `논문 수순`.
+   - 주제를 누르면 Topic 패널이 열린다.
+   - TOPICS 트리에서도 VS Code 기본 기능으로 찾을 수 있다. 트리를 클릭한 뒤 이름을 입력하거나 `Ctrl+Alt+F`를 누르면 된다.
+2. **주제 보기**: TOPICS 뷰에 데이터 폴더의 주제가 나타난다. 폴더 이름의 `_`는 공백으로 표시한다(`Few-Shot_Learning` → `Few-Shot Learning`).
+3. **논문 목록 보기**
    - 주제를 펼치면 논문 목록이 나온다. 각 논문 옆에는 `연도 · 인용수`가 표시된다. 요약 문서가 없는 논문에는 `문서 없음`이 붙는다.
    - 논문에 마우스를 올리면 저자, 연도, 인용수, 출처, URL, 초록 앞부분이 툴팁으로 나온다.
    - 메타 정보(json)를 읽지 못한 논문은 경고 아이콘으로 표시된다.
@@ -117,31 +129,34 @@ ArxivJS (Activity Bar)
      - **정렬**: 열 머리글(제목, 연도, 인용)을 누른다. 같은 열을 다시 누르면 방향이 바뀐다. 처음 정렬 기준은 설정 `arxivjs.paperSort`를 따른다. 연도나 인용수가 없는 논문은 방향과 관계없이 맨 뒤로 간다.
      - **필터**: 검색 칸에 낱말을 입력하면 제목과 저자에 그 낱말이 모두 들어 있는 논문만 남는다. "요약 문서 있는 것만"을 켜면 `.md`가 없는 논문을 숨긴다.
      - **초록**: 행의 `초록` 버튼으로 펼치고 접는다. `원문` 버튼은 원문 URL을 브라우저로 연다.
-     - 논문 제목을 누르면 Topic 패널 **옆에** Paper 패널이 열려, 표를 보면서 논문을 읽을 수 있다.
+     - 논문 제목을 누르면 Paper 패널이 열린다. 기본은 Topic 패널과 **같은 편집기 그룹의 새 탭**이다. 화면을 나눠 표와 논문을 함께 보려면 설정 `arxivjs.paperPanelLocation`을 `beside`로 바꾼다. 이때 논문은 오른쪽 그룹 하나에 모이고, 논문을 열 때마다 화면이 더 나뉘지는 않는다.
      - Reload 해도 정렬, 필터, 스크롤 위치, 펼친 초록은 그대로 유지된다.
-3. **논문 읽기**
-   - 논문을 클릭하면 **Paper 패널**이 열린다.
+4. **논문 읽기**
+   - 논문을 클릭하면 **Paper 패널**이 열린다. 기본은 논문마다 새 탭이고, 이미 열린 논문은 그 탭으로 이동한다. 탭 하나를 재사용하려면 설정 `arxivjs.openInNewTab`을 끈다.
    - 위쪽에는 메타 정보(제목, 저자, 연도, 인용수, 출처, 원문 링크)가 나오고, 아래에는 렌더링된 요약 문서가 나온다.
    - 요약 문서가 없는 논문은 초록을 대신 보여준다.
-4. **원문 열기**: Paper 패널의 원문 링크를 누르면 외부 브라우저에서 논문 페이지가 열린다.
-5. **다시 읽기(Reload)**
+5. **원문 열기**: Paper 패널의 원문 링크를 누르면 외부 브라우저에서 논문 페이지가 열린다.
+6. **다시 읽기(Reload)**
    - 이 확장은 파일 변경을 자동으로 감지하지 않는다. 다른 앱에서 데이터를 추가하거나 고쳤다면 Reload 버튼을 눌러 다시 읽는다.
    - 버튼마다 다시 읽는 범위가 다르다.
 
 | 버튼 위치         | 다시 읽는 범위                       |
 | ----------------- | ------------------------------------ |
 | TOPICS 제목줄 `⟳` | 전체(주제 목록과 펼쳐진 주제의 논문) |
+| 홈 `⟳`            | 전체                                 |
 | 주제 노드 옆 `⟳`  | 그 주제의 논문 목록                  |
 | Topic 패널 `⟳`    | 그 주제의 논문 목록                  |
 | Paper 패널 `⟳`    | 그 논문의 메타 정보와 문서           |
 
 ### 설정 항목
 
-| 설정                   | 기본값     | 설명                                                                  |
-| ---------------------- | ---------- | --------------------------------------------------------------------- |
-| `arxivjs.dataFolder`   | `""`       | 데이터 폴더의 절대 경로                                               |
-| `arxivjs.paperSort`    | `citation` | 논문 정렬 기준: `citation`(인용수), `year`(연도), `title`(제목)       |
-| `arxivjs.openInNewTab` | `false`    | `true`이면 논문마다 새 탭을 연다. `false`이면 패널 하나를 재사용한다. |
+| 설정                         | 기본값      | 설명                                                                                                              |
+| ---------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| `arxivjs.dataFolder`         | `""`        | 데이터 폴더의 절대 경로                                                                                           |
+| `arxivjs.paperSort`          | `citation`  | 논문 정렬 기준: `citation`(인용수), `year`(연도), `title`(제목)                                                   |
+| `arxivjs.openInNewTab`       | `true`      | `true`이면 논문마다 새 탭을 연다. `false`이면 논문 탭 하나를 재사용한다.                                          |
+| `arxivjs.paperPanelLocation` | `sameGroup` | 논문을 열 편집기 그룹. `sameGroup`은 논문 목록과 같은 그룹이라 화면을 나누지 않는다. `beside`는 목록 옆 그룹이다. |
+| `arxivjs.openHomeOnStartup`  | `true`      | ArxivJS 뷰를 처음 열 때 주제 목록(홈)을 함께 연다.                                                                |
 
 ### 명령 목록
 
@@ -219,7 +234,7 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 다음 명령으로 저장소를 받고 의존성을 설치한다.
 
 ```bash
-git clone <repository-url> arxivjs-extension
+git clone https://github.com/doosik71/arxivjs-extension.git
 cd arxivjs-extension
 npm install
 ```
@@ -234,7 +249,9 @@ npm install
 | `npm run lint`             | ESLint를 실행한다. 쓰기 API 사용 금지 규칙도 여기서 검사한다. |
 | `npm test`                 | 단위 테스트(vitest)를 실행한다.                               |
 | `npm run check`            | `typecheck` → `lint` → `test`를 차례로 실행한다.              |
-| `npm run test:integration` | VS Code 통합 테스트(`@vscode/test-electron`)를 실행한다.      |
+| `npm run test:integration` | VS Code 통합 테스트를 읽기 전용 검증과 함께 실행한다.         |
+| `npm run bench`            | 성능을 측정하고 목표(DEV-PLAN §5.4)를 판정한다.               |
+| `npm run icon`             | Marketplace 아이콘 `media/icon.png`를 다시 만든다.            |
 | `npm run package`          | `.vsix` 파일을 만든다.                                        |
 
 ### 로컬에서 실행과 디버깅
@@ -254,30 +271,60 @@ npm test
 npm run test:integration
 ```
 
-- 테스트 데이터는 `test/fixtures/sample-data/`에 있다.
-- 통합 테스트는 fixture 폴더를 읽기 전용으로 설정한 뒤 실행한다. 실행 전후로 파일 해시를 비교해서 **어떤 파일도 바뀌지 않았는지** 검증한다.
+- 테스트 데이터는 `test/fixtures/sample-data/`에 있다. 어떤 경계 사례가 들어 있는지는 `test/fixtures/README.md`에 정리되어 있다.
+- 통합 테스트(`scripts/run-integration.mjs`)는 다음 순서로 **어떤 파일도 바뀌지 않았는지** 검증한다.
+  1. fixture의 모든 파일 경로, 크기, mtime, SHA-256을 기록한다.
+  2. fixture를 OS 수준 읽기 전용으로 바꾼다. 이때 기존 파일에 쓰면 `EPERM`으로 실패한다.
+  3. 테스트를 실행한다.
+  4. 읽기 전용을 되돌린다.
+  5. 기록과 비교해서 파일이 생기거나, 사라지거나, 바뀌었으면 실패로 처리한다.
+- 통합 테스트는 기본으로 최신 안정판 VS Code에서 실행한다. 최소 지원 버전에서 확인하려면 다음처럼 실행한다.
+
+  ```bash
+  VSCODE_TEST_VERSION=1.90.0 npm run test:integration
+  ```
+
+### 성능 측정
+
+```bash
+npm run bench                            # fixture
+npm run bench -- D:\dev\javascript\arxivjsdata   # 실데이터 (읽기만 한다)
+```
+
+다음 목표를 판정하고, 하나라도 넘으면 종료 코드 1로 끝난다.
+
+| 항목                   | 목표       |
+| ---------------------- | ---------- |
+| 주제 목록              | 100ms 이하 |
+| 가장 큰 주제의 첫 로딩 | 500ms 이하 |
+| 가장 큰 md 렌더링      | 200ms 이하 |
+
+그 밖에 모든 md 문서를 한 번씩 렌더링해서 시간 분포(p50, p95, 최대)와 렌더링 예외 건수를 보여준다.
 
 ### 패키징 (.vsix 만들기)
 
 ```bash
 npm run package
-# 내부적으로: npx @vscode/vsce package
+# 내부적으로: vsce package --no-dependencies
 ```
+
+- `--no-dependencies`: 확장은 esbuild로 번들하므로 `node_modules`를 넣지 않는다.
+- README의 상대 링크는 vsce가 `repository`(GitHub) 주소 기준의 절대 링크로 바꾼다. 패키지에 들어가지 않는 파일(`DEV-PLAN.md` 등)은 링크하지 않고 이름만 적는다.
 
 이 명령을 실행하면 프로젝트 루트에 `arxivjs-viewer-<버전>.vsix`가 생긴다. 이 파일을 [방법 2](#방법-2-vsix-파일로-설치)로 설치하면 Marketplace 없이도 팀 내부에 배포할 수 있다.
 
-패키징 전에 `package.json`에서 다음 항목을 확인한다.
+`package.json`의 게시 관련 항목:
 
-| 항목             | 예                                | 비고                                |
-| ---------------- | --------------------------------- | ----------------------------------- |
-| `name`           | `arxivjs-viewer`                  | 소문자, 공백 없음                   |
-| `displayName`    | `ArxivJS Viewer`                  | Marketplace에 표시되는 이름         |
-| `publisher`      | `<publisher-id>`                  | 아래에서 만드는 게시자 ID           |
-| `version`        | `0.1.0`                           | SemVer                              |
-| `engines.vscode` | `^1.90.0`                         |                                     |
-| `icon`           | `media/icon.png`                  | 128×128 이상 PNG. SVG는 쓸 수 없다. |
-| `repository`     | `{ "type": "git", "url": "..." }` | 없으면 경고가 난다.                 |
-| `license`        | `MIT` 등                          | 루트에 `LICENSE` 파일도 둔다.       |
+| 항목             | 값                                                  | 비고                                           |
+| ---------------- | --------------------------------------------------- | ---------------------------------------------- |
+| `name`           | `arxivjs-viewer`                                    | 소문자, 공백 없음                              |
+| `displayName`    | `ArxivJS Viewer`                                    | Marketplace에 표시되는 이름                    |
+| `publisher`      | `doosik71`                                          | 게시자 ID. 확장 ID는 `doosik71.arxivjs-viewer` |
+| `version`        | `0.2.0`                                             | SemVer                                         |
+| `engines.vscode` | `^1.90.0`                                           |                                                |
+| `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
+| `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
+| `license`        | `MIT`                                               | 루트의 `LICENSE` 파일                          |
 
 배포 패키지에 들어갈 필요가 없는 파일(`src/`, `test/`, `node_modules/` 등)은 `.vscodeignore`에 등록한다.
 
@@ -295,16 +342,20 @@ npm run package
    - **Expiration**: 원하는 기간
 4. 만든 토큰을 안전한 곳에 복사해 둔다. 이 창을 닫으면 다시 볼 수 없다.
 
-#### 2단계. 게시자(Publisher) 만들기
+#### 2단계. 게시자(Publisher) 확인
+
+이 확장의 게시자는 [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)이다. 이미 만들어져 있고, `package.json`의 `publisher`에 적혀 있다.
+
+다른 게시자로 배포하려면 다음과 같이 한다.
 
 1. <https://marketplace.visualstudio.com/manage>에 같은 계정으로 로그인한다.
 2. **Create publisher**를 누르고 ID와 이름을 입력한다. ID는 나중에 바꿀 수 없다.
-3. 만든 게시자 ID를 `package.json`의 `publisher`에 적는다.
+3. 그 ID를 `package.json`의 `publisher`에 적는다.
 
 #### 3단계. vsce 로그인
 
 ```bash
-npx @vscode/vsce login <publisher-id>
+npx @vscode/vsce login doosik71
 # 프롬프트에 1단계의 PAT를 붙여넣는다.
 ```
 
@@ -314,23 +365,23 @@ npx @vscode/vsce login <publisher-id>
 npx @vscode/vsce publish
 ```
 
-- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.1.0.vsix`로 그 파일을 올릴 수 있다.
+- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.2.0.vsix`로 그 파일을 올릴 수 있다.
 - 웹에서 올릴 수도 있다. <https://marketplace.visualstudio.com/manage>에서 게시자를 고르고 **New extension → Visual Studio Code**로 `.vsix`를 업로드한다.
-- 게시 후 검증을 거쳐 몇 분 안에 Marketplace 검색에 나타난다. 확장 ID는 `<publisher-id>.arxivjs-viewer`가 된다.
+- 게시 후 검증을 거쳐 몇 분 안에 Marketplace 검색에 나타난다. 확장 ID는 `doosik71.arxivjs-viewer`다.
 
 > Azure DevOps의 PAT 정책은 바뀔 수 있다. 위 방법이 막히면 공식 문서 [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)를 확인한다. Microsoft Entra ID 인증을 쓰는 `vsce publish --azure-credential` 방식도 그 문서에 안내되어 있다.
 
 ### 버전 업데이트와 재게시
 
 ```bash
-npx @vscode/vsce publish patch   # 0.1.0 → 0.1.1
-npx @vscode/vsce publish minor   # 0.1.0 → 0.2.0
+npx @vscode/vsce publish patch   # 0.2.0 → 0.2.1
+npx @vscode/vsce publish minor   # 0.2.0 → 0.3.0
 npx @vscode/vsce publish 1.0.0   # 버전 직접 지정
 ```
 
 `publish patch|minor|major`는 `package.json`의 버전을 올리고 git 태그를 만든 뒤 게시한다. 게시 전에 `CHANGELOG.md`를 갱신한다.
 
-Marketplace에서 확장을 내리려면 `npx @vscode/vsce unpublish <publisher-id>.arxivjs-viewer`를 실행한다. 이 작업은 되돌릴 수 없다.
+Marketplace에서 확장을 내리려면 `npx @vscode/vsce unpublish doosik71.arxivjs-viewer`를 실행한다. 이 작업은 되돌릴 수 없다.
 
 ### Open VSX에 등록 (선택)
 
@@ -341,8 +392,8 @@ VSCodium, Cursor 같은 VS Code 호환 에디터 사용자에게도 배포하려
 3. 다음 명령을 실행한다.
 
 ```bash
-npx ovsx create-namespace <publisher-id> -p <token>   # 최초 1회
-npx ovsx publish arxivjs-viewer-0.1.0.vsix -p <token>
+npx ovsx create-namespace doosik71 -p <token>   # 최초 1회
+npx ovsx publish arxivjs-viewer-0.2.0.vsix -p <token>
 ```
 
 ### 개발 시 주의 사항
@@ -353,4 +404,4 @@ npx ovsx publish arxivjs-viewer-0.1.0.vsix -p <token>
   - 테스트는 항상 `test/fixtures/` 아래의 복사본으로 한다.
 - 데이터 폴더 접근은 `src/data/readonlyFs.ts`를 거쳐서만 한다. 이 모듈은 읽기 API만 노출한다. ESLint가 다른 곳에서 `fs`를 쓰거나 쓰기 API를 호출하면 오류를 낸다.
 - 캐시나 사용자 상태는 `context.globalState`나 `context.globalStorageUri`에 저장한다. 데이터 폴더에는 아무 파일도 만들지 않는다.
-- 설계 상세는 [DEV-PLAN.md](DEV-PLAN.md)를 따른다.
+- 설계 상세는 저장소의 `DEV-PLAN.md`를 따른다.

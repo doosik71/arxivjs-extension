@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import type { ArxivjsApi } from '../../src/extension';
 import type { PaperNode, TopicNode, TreeNode } from '../../src/views/topicTreeProvider';
 
-const EXTENSION_ID = 'arxivjs.arxivjs-viewer';
+const EXTENSION_ID = 'doosik71.arxivjs-viewer';
 let FIXTURE = '';
 
 async function setConfig(key: string, value: unknown): Promise<void> {

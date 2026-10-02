@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Paper, PaperMeta } from '../../src/data/models';
-import { citationText, ellipsize, formatCitation, paperDescription, paperTooltipLines, topicDescription } from '../../src/views/format';
+import { AUTHORS_PREVIEW_CHARS, authorsPreview, citationText, countAuthors, ellipsize, formatCitation, paperDescription, paperTooltipLines, topicDescription } from '../../src/views/format';
 
 const paper = (meta: Partial<PaperMeta>, extra: Partial<Paper> = {}): Paper => ({
   id: 'T/p',
@@ -85,5 +85,33 @@ describe('citationText', () => {
   it('없는 값은 생략한다', () => {
     expect(citationText(paper({ title: 'T' }))).toBe('T');
     expect(citationText(paper({ title: 'T', year: 2020 }))).toBe('T. (2020)');
+  });
+});
+
+describe('countAuthors / authorsPreview (저자가 아주 많은 논문)', () => {
+  const many = Array.from({ length: 1351 }, (_, i) => `Author ${i + 1}`).join(', ');
+
+  it('쉼표로 구분한 저자 수', () => {
+    expect(countAuthors('A, B, C')).toBe(3);
+    expect(countAuthors('Single Author')).toBe(1);
+    expect(countAuthors('')).toBe(0);
+    expect(countAuthors(many)).toBe(1351);
+  });
+
+  it('짧으면 그대로, 길면 자르고 전체 저자 수를 붙인다', () => {
+    expect(authorsPreview('A, B')).toBe('A, B');
+    const preview = authorsPreview(many);
+    expect(preview.length).toBeLessThan(AUTHORS_PREVIEW_CHARS + 20);
+    expect(preview).toMatch(/… \(총 1,351명\)$/);
+    expect(preview.startsWith('Author 1, Author 2,')).toBe(true);
+  });
+
+  it('툴팁의 저자 줄도 줄인다', () => {
+    const t = paperTooltipLines(paper({ authors: many }));
+    expect(t.lines[0].text).toMatch(/\(총 1,351명\)$/);
+  });
+
+  it('정보 복사에는 저자를 모두 넣는다', () => {
+    expect(citationText(paper({ title: 'Gemini', authors: many }))).toContain('Author 1351');
   });
 });

@@ -15,6 +15,13 @@ interface TopicModel {
   initialSort(defaultSort: string): Sort;
   tokenize(filter: string): string[];
   matches(row: TopicRow, tokens: string[], onlyMarkdown: boolean): boolean;
+  matchesTopic(topic: HomeTopic, tokens: string[]): boolean;
+  topicComparator(sort: 'name' | 'count'): (a: HomeTopic, b: HomeTopic) => number;
+}
+interface HomeTopic {
+  id: string;
+  label: string;
+  count?: number;
 }
 
 const load = createRequire(__filename);
@@ -91,5 +98,32 @@ describe('topicModel 필터', () => {
   it('요약 문서 있는 것만', () => {
     expect(visible('', true)).not.toContain('n');
     expect(visible('', true)).toHaveLength(4);
+  });
+});
+
+describe('topicModel 홈(주제 목록)', () => {
+  const topics: HomeTopic[] = [
+    { id: 'Large_Language_Model', label: 'Large Language Model', count: 120 },
+    { id: 'Few-Shot_Learning', label: 'Few-Shot Learning', count: 87 },
+    { id: 'GPT', label: 'GPT', count: 12 },
+    { id: 'Zero-Shot_Learning', label: 'Zero-Shot Learning', count: 87 },
+    { id: 'Unknown', label: 'Unknown' },
+  ];
+  const visible = (filter: string) => {
+    const tokens = model.tokenize(filter);
+    return topics.filter((t) => model.matchesTopic(t, tokens)).map((t) => t.id);
+  };
+
+  it('표시 이름과 폴더 이름에서 대소문자 무시로 찾는다', () => {
+    expect(visible('shot')).toEqual(['Few-Shot_Learning', 'Zero-Shot_Learning']);
+    expect(visible('large_language')).toEqual(['Large_Language_Model']); // 폴더 이름으로도 찾는다
+    expect(visible('learning zero')).toEqual(['Zero-Shot_Learning']);
+    expect(visible('')).toHaveLength(5);
+  });
+
+  it('정렬: 이름순, 논문 수순(같으면 이름, 모르는 수는 맨 뒤)', () => {
+    const ids = (sort: 'name' | 'count') => [...topics].sort(model.topicComparator(sort)).map((t) => t.id);
+    expect(ids('name')).toEqual(['Few-Shot_Learning', 'GPT', 'Large_Language_Model', 'Unknown', 'Zero-Shot_Learning']);
+    expect(ids('count')).toEqual(['Large_Language_Model', 'Few-Shot_Learning', 'Zero-Shot_Learning', 'GPT', 'Unknown']);
   });
 });

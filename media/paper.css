@@ -10,7 +10,12 @@
 }
 
 .paper-title { margin: 8px 0 4px; font-size: 1.6em; line-height: 1.3; }
-.authors { margin: 0 0 2px; color: var(--vscode-descriptionForeground); }
+/* 저자: 한 줄까지만 보이고 넘치면 "…". 저자가 수백 명인 논문(최대 1,351명)도 있다. */
+.authors { display: flex; gap: 8px; align-items: baseline; margin: 0 0 2px; color: var(--vscode-descriptionForeground); }
+.authors-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.authors-toggle { flex: none; font-size: 0.9em; }
+.authors.expanded { align-items: flex-start; }
+.authors.expanded .authors-text { white-space: normal; max-height: 30vh; overflow-y: auto; }
 .meta { margin: 0; color: var(--vscode-descriptionForeground); font-size: 0.92em; }
 .meta .sep { margin: 0 6px; opacity: 0.6; }
 

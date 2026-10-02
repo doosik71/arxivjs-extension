@@ -14,9 +14,31 @@
     scrollTimer = setTimeout(() => vscode.setState({ paperId, scrollY: window.scrollY }), 100);
   });
 
+  // 저자 줄: 한 줄을 넘칠 때만 "모두 보기" 버튼을 보여준다. 창 크기가 바뀌면 다시 잰다.
+  const authors = document.getElementById('authors');
+  const authorsText = authors && authors.querySelector('.authors-text');
+  const authorsToggle = authors && authors.querySelector('.authors-toggle');
+  function updateAuthorsToggle() {
+    if (!authors || authors.classList.contains('expanded')) {
+      return;
+    }
+    authorsToggle.hidden = authorsText.scrollWidth <= authorsText.clientWidth + 1;
+  }
+  if (authors) {
+    new ResizeObserver(updateAuthorsToggle).observe(authors);
+    updateAuthorsToggle();
+  }
+
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) {
+      return;
+    }
+    if (target.closest('[data-toggle="authors"]') && authors) {
+      const expanded = authors.classList.toggle('expanded');
+      authorsToggle.setAttribute('aria-expanded', String(expanded));
+      authorsToggle.textContent = expanded ? authorsToggle.dataset.less : authorsToggle.dataset.more;
+      updateAuthorsToggle();
       return;
     }
     const button = target.closest('[data-action]');

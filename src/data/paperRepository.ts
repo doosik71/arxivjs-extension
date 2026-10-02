@@ -28,6 +28,8 @@ const errorMessage = (err: unknown) => (err instanceof Error ? err.message : Str
 /** 주제별 논문 목록과 문서 읽기 (DEV-PLAN §6.2–6.3). 목록은 주제별로 reload 전까지 캐시한다. */
 export class PaperRepository {
   private readonly cache = new Map<string, Promise<Paper[]>>();
+  /** 목록을 읽지 않은 주제의 논문 수 */
+  private readonly counts = new Map<string, Promise<number>>();
   private readonly concurrency: number;
   private readonly retryDelayMs: number;
   private readonly sort: () => PaperSort;
@@ -63,14 +65,39 @@ export class PaperRepository {
     return this.cache.has(topicId);
   }
 
+  /**
+   * 주제의 논문 수 (홈 페이지용). 목록을 읽은 주제는 그 길이를, 아니면 폴더 목록만 읽어 stem 수를 센다.
+   * json은 읽지 않으므로 108개 주제 전체를 세도 빠르다. 결과는 reload 전까지 캐시한다.
+   */
+  async count(topic: Topic): Promise<number> {
+    const cached = this.cache.get(topic.id);
+    if (cached) {
+      return (await cached).length;
+    }
+    let pending = this.counts.get(topic.id);
+    if (!pending) {
+      pending = this.filePairs(topic).then((pairs) => pairs.size);
+      this.counts.set(topic.id, pending);
+      const settled = pending;
+      settled.catch(() => {
+        if (this.counts.get(topic.id) === settled) {
+          this.counts.delete(topic.id);
+        }
+      });
+    }
+    return pending;
+  }
+
   /** 한 주제의 캐시를 비운다. */
   reloadTopic(topicId: string): void {
     this.cache.delete(topicId);
+    this.counts.delete(topicId);
   }
 
   /** 모든 캐시를 비운다. */
   reloadAll(): void {
     this.cache.clear();
+    this.counts.clear();
   }
 
   /**
@@ -86,6 +113,7 @@ export class PaperRepository {
       }
     }
     const paper = pair.jsonPath || pair.mdPath ? await this.readPaper(topic, pair) : undefined;
+    this.counts.delete(topic.id);
 
     const cached = this.cache.get(topic.id);
     if (cached) {
@@ -107,7 +135,8 @@ export class PaperRepository {
     return paper.mdPath ? this.fs.readText(paper.mdPath) : undefined;
   }
 
-  private async scan(topic: Topic): Promise<Paper[]> {
+  /** 폴더의 .json/.md를 stem별로 묶는다. */
+  private async filePairs(topic: Topic): Promise<Map<string, FilePair>> {
     const pairs = new Map<string, FilePair>();
     for (const entry of await this.fs.readDir(topic.path)) {
       if (!entry.isFile) {
@@ -122,7 +151,11 @@ export class PaperRepository {
       pair[ext === '.json' ? 'jsonPath' : 'mdPath'] = path.join(topic.path, entry.name);
       pairs.set(stem, pair);
     }
+    return pairs;
+  }
 
+  private async scan(topic: Topic): Promise<Paper[]> {
+    const pairs = await this.filePairs(topic);
     const papers = await mapLimit([...pairs.values()], this.concurrency, (pair) =>
       this.readPaper(topic, pair).catch((err) => {
         // readdir 이후 파일이 사라진 경우: 목록에서 빼고 넘어간다.

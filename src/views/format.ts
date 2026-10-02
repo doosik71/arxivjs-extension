@@ -35,6 +35,19 @@ export function ellipsize(text: string, max: number): string {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
+/** 쉼표로 구분한 저자 문자열의 저자 수 */
+export function countAuthors(authors: string): number {
+  return authors.split(',').filter((a) => a.trim() !== '').length;
+}
+
+export const AUTHORS_PREVIEW_CHARS = 300;
+
+/** 툴팁용 저자: 길면 자르고 전체 저자 수를 붙인다. 실데이터에는 저자가 1,351명(약 2만 자)인 논문도 있다. */
+export function authorsPreview(authors: string, max = AUTHORS_PREVIEW_CHARS): string {
+  const short = ellipsize(authors, max);
+  return short.length < authors.replace(/\s+/g, ' ').trim().length ? `${short} (총 ${numberFormat.format(countAuthors(authors))}명)` : short;
+}
+
 export interface TooltipLine {
   label?: string;
   text: string;
@@ -45,7 +58,7 @@ export function paperTooltipLines(paper: Paper): { title: string; lines: Tooltip
   const { meta } = paper;
   const lines: TooltipLine[] = [];
   if (meta.authors) {
-    lines.push({ label: '저자', text: meta.authors });
+    lines.push({ label: '저자', text: authorsPreview(meta.authors) });
   }
   const yearCite = [meta.year?.toString(), meta.citation !== undefined ? `인용 ${formatCitation(meta.citation)}` : undefined]
     .filter(Boolean)

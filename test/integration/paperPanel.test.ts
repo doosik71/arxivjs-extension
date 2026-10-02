@@ -4,7 +4,17 @@ import * as vscode from 'vscode';
 import type { ArxivjsApi } from '../../src/extension';
 import type { PaperNode, TopicNode } from '../../src/views/topicTreeProvider';
 
-const EXTENSION_ID = 'arxivjs.arxivjs-viewer';
+const EXTENSION_ID = 'doosik71.arxivjs-viewer';
+
+async function waitFor(condition: () => boolean, message: string, timeoutMs = 3000): Promise<void> {
+  const start = Date.now();
+  while (!condition()) {
+    if (Date.now() - start > timeoutMs) {
+      assert.fail(message);
+    }
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
 
 async function setConfig(key: string, value: unknown): Promise<void> {
   await vscode.workspace.getConfiguration('arxivjs').update(key, value, vscode.ConfigurationTarget.Global);
@@ -89,17 +99,48 @@ suite('Paper 패널', () => {
     assert.match(html, /markdown-body/);
   });
 
-  test('기본은 패널 하나를 재사용한다', async () => {
+  test('기본(openInNewTab=true)은 논문마다 새 탭을 연다. 같은 논문은 기존 탭을 쓴다', async () => {
+    await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
+    await open(await paperNode('Cosine_Similarity', 'low_shot_learning_with_imprinted_weights'));
+    await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
+    assert.strictEqual(api.panels.openPaperIds.length, 2);
+  });
+
+  test('openInNewTab=false이면 탭 하나를 재사용한다', async () => {
+    await setConfig('openInNewTab', false);
     await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
     await open(await paperNode('Cosine_Similarity', 'low_shot_learning_with_imprinted_weights'));
     assert.deepStrictEqual(api.panels.openPaperIds, ['Cosine_Similarity/low_shot_learning_with_imprinted_weights']);
   });
 
-  test('openInNewTab이면 논문마다 패널을 연다', async () => {
-    await setConfig('openInNewTab', true);
-    await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
-    await open(await paperNode('Cosine_Similarity', 'low_shot_learning_with_imprinted_weights'));
-    assert.strictEqual(api.panels.openPaperIds.length, 2);
+  /** Topic 패널에서 논문 두 편을 열고, 편집기 그룹별 탭 이름을 돌려준다. */
+  async function openTwoFromTopicPanel(): Promise<string[][]> {
+    await vscode.commands.executeCommand('arxivjs.openTopic', api.tree.getTopicNode('Cosine_Similarity') ?? (await paperNode('Cosine_Similarity')).parent);
+    for (const stem of ['a_closer_look_at_few_shot_classification', 'low_shot_learning_with_imprinted_weights']) {
+      await api.topicPanel.handleMessage({ type: 'openPaper', id: `Cosine_Similarity/${stem}` });
+      await waitFor(() => api.panels.openPaperIds.includes(`Cosine_Similarity/${stem}`), `논문이 열리지 않았다: ${stem}`);
+    }
+    const groups = () => vscode.window.tabGroups.all.map((g) => g.tabs.map((t) => t.label));
+    await waitFor(() => groups().flat().length >= 3, `탭이 모두 보이지 않는다: ${JSON.stringify(groups())}`);
+    return groups();
+  }
+
+  test('paperPanelLocation=sameGroup(기본): Topic 패널과 같은 편집기 그룹에 새 탭으로 연다', async () => {
+    const groups = await openTwoFromTopicPanel();
+    assert.strictEqual(groups.length, 1, `편집기 그룹이 나뉘면 안 된다: ${JSON.stringify(groups)}`);
+    assert.strictEqual(groups[0].length, 3);
+  });
+
+  test('paperPanelLocation=beside: Topic 패널 옆 그룹에 연다 (클릭할 때마다 더 나뉘지는 않는다)', async () => {
+    await setConfig('paperPanelLocation', 'beside');
+    try {
+      const groups = await openTwoFromTopicPanel();
+      assert.strictEqual(groups.length, 2, `그룹: ${JSON.stringify(groups)}`);
+      const topicGroup = groups.find((g) => g.includes('Cosine Similarity'))!;
+      assert.deepStrictEqual(topicGroup, ['Cosine Similarity'], '논문은 Topic 패널과 다른 그룹에 있어야 한다');
+    } finally {
+      await setConfig('paperPanelLocation', undefined);
+    }
   });
 
   test('Reload Paper 명령은 활성 패널을 다시 그린다', async () => {

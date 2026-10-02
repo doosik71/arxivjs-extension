@@ -35,6 +35,7 @@ describe('toTopicRow', () => {
       id: 'T/p',
       title: 'Title',
       authors: 'A',
+      authorCount: 1,
       year: 2020,
       citation: 3,
       source: 'arxiv',

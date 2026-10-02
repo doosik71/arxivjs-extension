@@ -204,3 +204,57 @@ describe('PaperRepository.reloadPaper', () => {
     expect((await repo.list(T)).map((p) => p.stem)).toEqual(['b']);
   });
 });
+
+describe('PaperRepository.count', () => {
+  const T = memTopic('T');
+
+  it('json을 읽지 않고 폴더 목록만으로 stem 수를 센다 (md만 있는 논문 포함, 무시 대상 제외)', async () => {
+    const fs = new MemoryFs({
+      'T/a.json': json({ title: 'A' }),
+      'T/a.md': '# A',
+      'T/b.json': json({ title: 'B' }),
+      'T/c.md': '# C',
+      'T/a.txt': 'x',
+      'T/a.hlt': '{}',
+      'T/b.md.bak': 'x',
+    });
+    const repo = new PaperRepository(fs, silentLogger);
+    expect(await repo.count(T)).toBe(3);
+    expect(fs.reads('T/a.json') + fs.reads('T/b.json')).toBe(0);
+    expect(repo.isLoaded('T')).toBe(false);
+  });
+
+  it('목록을 읽은 주제는 목록 길이를 쓴다', async () => {
+    const fs = new MemoryFs({ 'T/a.json': json({ title: 'A' }), 'T/b.json': json({ title: 'B' }) });
+    const repo = new PaperRepository(fs, silentLogger);
+    await repo.list(T);
+    fs.setFile('T/c.json', json({ title: 'C' })); // 캐시된 목록 기준이므로 반영되지 않는다
+    expect(await repo.count(T)).toBe(2);
+  });
+
+  it('reload 전까지 캐시하고, reloadTopic/reloadAll/reloadPaper 후 다시 센다', async () => {
+    const fs = new MemoryFs({ 'T/a.json': json({ title: 'A' }) });
+    const repo = new PaperRepository(fs, silentLogger);
+    expect(await repo.count(T)).toBe(1);
+    fs.setFile('T/b.json', json({ title: 'B' }));
+    expect(await repo.count(T)).toBe(1);
+    repo.reloadTopic('T');
+    expect(await repo.count(T)).toBe(2);
+
+    fs.setFile('T/c.json', json({ title: 'C' }));
+    repo.reloadAll();
+    expect(await repo.count(T)).toBe(3);
+
+    fs.setFile('T/d.json', json({ title: 'D' }));
+    await repo.reloadPaper(T, 'd');
+    expect(await repo.count(T)).toBe(4);
+  });
+
+  it('주제 폴더가 없으면 DataError(notFound), 캐시하지 않는다', async () => {
+    const fs = new MemoryFs();
+    const repo = new PaperRepository(fs, silentLogger);
+    await expect(repo.count(T)).rejects.toMatchObject({ kind: 'notFound' });
+    fs.setFile('T/a.json', json({ title: 'A' }));
+    expect(await repo.count(T)).toBe(1);
+  });
+});

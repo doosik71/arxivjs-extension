@@ -76,5 +76,25 @@
     return tokens.every((t) => haystack.includes(t));
   }
 
-  return { DEFAULT_DIR, comparator, nextSort, initialSort, tokenize, matches };
+  // ---- 홈(주제 목록) ----
+
+  /** 주제 이름(표시 이름과 폴더 이름)에 모든 토큰이 들어 있는지 */
+  function matchesTopic(topic, tokens) {
+    const haystack = `${topic.label} ${topic.id}`.toLowerCase();
+    return tokens.every((t) => haystack.includes(t));
+  }
+
+  /** sort: 'name'(이름 오름차순) | 'count'(논문 수 내림차순, 같으면 이름) */
+  function topicComparator(sort) {
+    const byName = (a, b) => collator.compare(a.label, b.label);
+    if (sort === 'count') {
+      return chain(
+        byNumber((t) => t.count, -1),
+        byName,
+      );
+    }
+    return byName;
+  }
+
+  return { DEFAULT_DIR, comparator, nextSort, initialSort, tokenize, matches, matchesTopic, topicComparator };
 });

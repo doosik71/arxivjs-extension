@@ -73,7 +73,10 @@ function safeLinks(md: Md): void {
 export function createMarkdownRenderer(): Md {
   // html: false → 본문의 <think>, <kw> 같은 텍스트를 태그로 해석하지 않고 이스케이프한다 (DEV-PLAN §2.6).
   const md = new MarkdownIt({ html: false, linkify: true, typographer: false });
-  md.use(katexPlugin, { throwOnError: false, enableBareBlocks: false });
+  // strict: 'ignore' — 요약 문서는 수식 안에 한글을 자주 쓴다. KaTeX는 그대로 그려 주지만 기본값('warn')은
+  // 글자마다 콘솔 경고를 낸다(실데이터 기준 686건). 플러그인은 옵션을 KaTeX에 그대로 넘긴다.
+  const katexOptions = { throwOnError: false, enableBareBlocks: false, strict: 'ignore' as const };
+  md.use(katexPlugin, katexOptions);
   md.use(headingIds);
   md.use(safeLinks);
   return md;

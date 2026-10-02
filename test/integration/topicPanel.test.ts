@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import type { ArxivjsApi } from '../../src/extension';
 import type { TopicNode } from '../../src/views/topicTreeProvider';
 
-const EXTENSION_ID = 'arxivjs.arxivjs-viewer';
+const EXTENSION_ID = 'doosik71.arxivjs-viewer';
 
 async function setConfig(key: string, value: unknown): Promise<void> {
   await vscode.workspace.getConfiguration('arxivjs').update(key, value, vscode.ConfigurationTarget.Global);

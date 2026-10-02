@@ -52,13 +52,26 @@ describe('buildPaperHtml', () => {
   it('메타 헤더: 제목·저자는 이스케이프, 연도·인용수·source 배지·버튼', () => {
     const html = buildPaperHtml(vm(), res);
     expect(html).toContain('<h1 class="paper-title">Before you &lt;think&gt;, monitor</h1>');
-    expect(html).toContain('<p class="authors">A &amp; B</p>');
+    expect(html).toContain('<span class="authors-text">A &amp; B</span>');
     expect(html).toContain('인용 1,234');
     expect(html).toContain('class="badge source-pdf">pdf</span>');
     for (const action of ['openExternal', 'copyInfo', 'reload', 'revealTopic']) {
       expect(html).toContain(`data-action="${action}"`);
     }
     expect(html).toContain('data-paper-id="T/p"');
+  });
+
+  it('저자 줄: 이스케이프한 전체 저자, 처음에는 숨긴 "모두 보기 (N명)" 버튼', () => {
+    const many = Array.from({ length: 1351 }, (_, i) => `Author <${i + 1}>`).join(', ');
+    const html = buildPaperHtml(vm({ authors: many }), res);
+    expect(html).toContain('<span class="authors-text">Author &lt;1&gt;, Author &lt;2&gt;');
+    expect(html).toContain('Author &lt;1351&gt;</span>');
+    expect(html).toMatch(/<button type="button" class="link authors-toggle" data-toggle="authors"[^>]* hidden [^>]*>모두 보기 \(1,351명\)<\/button>/);
+    expect(html).toContain('data-less="접기"');
+  });
+
+  it('저자가 없으면 저자 줄이 없다', () => {
+    expect(buildPaperHtml(vm({ authors: '' }), res)).not.toContain('class="authors"');
   });
 
   it('스크립트에 nonce, 스타일 링크', () => {

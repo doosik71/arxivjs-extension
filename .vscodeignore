@@ -13,3 +13,4 @@ vitest.config.mts
 tsconfig.json
 DEV-PLAN.md
 .gitignore
+scripts/**

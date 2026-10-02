@@ -38,6 +38,21 @@
     return node;
   }
 
+  // 저자 줄: 한 줄까지만 보이고 넘치면 "…" + "(N명)". 툴팁은 앞부분만 (저자가 1,351명인 논문도 있다).
+  const AUTHORS_TOOLTIP_CHARS = 300;
+  function authorsLine(row) {
+    const tooltip =
+      row.authors.length > AUTHORS_TOOLTIP_CHARS
+        ? `${row.authors.slice(0, AUTHORS_TOOLTIP_CHARS)}… (총 ${numberFormat.format(row.authorCount)}명)`
+        : row.authors;
+    return el(
+      'div',
+      { class: 'authors', title: tooltip },
+      el('span', { class: 'authors-text', text: row.authors }),
+      el('span', { class: 'authors-count', text: `(${numberFormat.format(row.authorCount)}명)` }),
+    );
+  }
+
   const items = data.rows.map((row) => {
     const titleCell = el(
       'td',
@@ -46,7 +61,7 @@
       row.source ? el('span', { class: `badge source-${row.source.toLowerCase()}`, text: row.source }) : null,
       row.metaError ? el('span', { class: 'tag tag-warning', text: '메타 오류', title: '메타 정보(.json)를 읽지 못했습니다' }) : null,
       row.hasMarkdown ? null : el('span', { class: 'tag', text: '문서 없음' }),
-      row.authors ? el('div', { class: 'authors', text: row.authors }) : null,
+      row.authors ? authorsLine(row) : null,
     );
     const actions = el(
       'td',
@@ -64,11 +79,22 @@
     );
     const abstractBody = el('div', { class: 'abstract-body' });
     const abstractRow = el('tr', { class: 'abstract-row', hidden: true }, el('td', { colspan: '4' }, abstractBody));
-    return { row, tr, abstractRow, abstractBody, loaded: false };
+    return { row, tr, abstractRow, abstractBody, authorsEl: titleCell.querySelector('.authors'), loaded: false };
   });
   const byId = new Map(items.map((it) => [it.row.id, it]));
 
   // ---- 그리기 ----
+  /** 보이는 행 중 저자 줄이 잘린 행에 표시를 붙인다. 창 크기가 바뀌면 다시 잰다. */
+  function markTruncatedAuthors() {
+    for (const it of items) {
+      const line = it.authorsEl;
+      if (line && !it.tr.hidden) {
+        const text = line.firstChild;
+        line.classList.toggle('truncated', text.scrollWidth > text.clientWidth + 1);
+      }
+    }
+  }
+
   function render() {
     const cmp = model.comparator(state.sort);
     const tokens = model.tokenize(state.filter);
@@ -85,6 +111,7 @@
     rowsEl.append(fragment);
     countEl.textContent = visible === items.length ? `${items.length}편` : `${visible} / ${items.length}편`;
     emptyEl.hidden = visible > 0 || items.length === 0;
+    markTruncatedAuthors();
     for (const th of document.querySelectorAll('th')) {
       const button = th.querySelector('.sort');
       const active = button && button.dataset.sort === state.sort.key;
@@ -183,6 +210,7 @@
   const header = document.querySelector('.topic-header');
   const setHeaderHeight = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
   new ResizeObserver(setHeaderHeight).observe(header);
+  new ResizeObserver(markTruncatedAuthors).observe(document.querySelector('table.papers'));
 
   // ---- 시작 ----
   filterEl.value = state.filter;

@@ -1,6 +1,6 @@
 // Paper 패널 HTML 템플릿 (vscode 비의존). 데이터 문자열은 모두 여기서 이스케이프한다.
 import { randomBytes } from 'node:crypto';
-import { formatCitation } from '../views/format';
+import { countAuthors, formatCitation } from '../views/format';
 import type { Heading } from './markdown';
 
 const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -66,6 +66,24 @@ export function scriptTags(res: WebviewResources): string {
   return res.scriptUris.map((u) => `<script nonce="${res.nonce}" src="${escapeHtml(u)}"></script>`).join('\n  ');
 }
 
+/**
+ * 저자 줄. CSS로 한 줄까지만 보이고 넘치면 "…"로 줄인다.
+ * 넘칠 때만 스크립트(paper.js)가 "모두 보기 (N명)" 버튼을 보여주고, 누르면 펼치고 접는다.
+ */
+function authorsLine(authors: string): string {
+  if (!authors) {
+    return '';
+  }
+  const count = formatCitation(countAuthors(authors));
+  return (
+    `<div class="authors" id="authors">` +
+    `<span class="authors-text">${escapeHtml(authors)}</span>` +
+    `<button type="button" class="link authors-toggle" data-toggle="authors" aria-controls="authors" aria-expanded="false" hidden ` +
+    `data-more="모두 보기 (${count}명)" data-less="접기">모두 보기 (${count}명)</button>` +
+    `</div>`
+  );
+}
+
 function metaLine(vm: PaperViewModel): string {
   const parts: string[] = [];
   if (vm.year !== undefined) {
@@ -121,7 +139,7 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
       <button type="button" data-action="reload" title="이 논문을 다시 읽기">⟳ Reload</button>
     </div>
     <h1 class="paper-title">${escapeHtml(vm.title)}</h1>
-    ${vm.authors ? `<p class="authors">${escapeHtml(vm.authors)}</p>` : ''}
+    ${authorsLine(vm.authors)}
     <p class="meta">${metaLine(vm)}</p>
   </header>
   ${notices(vm.notices)}
