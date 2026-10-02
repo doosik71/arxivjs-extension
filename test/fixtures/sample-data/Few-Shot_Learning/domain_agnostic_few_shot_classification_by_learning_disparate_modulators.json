@@ -1,0 +1,8 @@
+{
+  "title": "Domain-Agnostic Few-Shot Classification by Learning Disparate Modulators",
+  "authors": "Yongseok Choi, Junyoung Park, Subin Yi, Dong-Yeon Cho",
+  "year": 2019,
+  "url": "http://arxiv.org/abs/1909.04999v2",
+  "abstract": "Although few-shot learning research has advanced rapidly with the help of meta-learning, its practical usefulness is still limited because most of them assumed that all meta-training and meta-testing examples came from a single domain. We propose a simple but effective way for few-shot classification in which a task distribution spans multiple domains including ones never seen during meta-training. The key idea is to build a pool of models to cover this wide task distribution and learn to select the best one for a particular task through cross-domain meta-learning. All models in the pool share a base network while each model has a separate modulator to refine the base network in its own way. This framework allows the pool to have representational diversity without losing beneficial domain-invariant features. We verify the effectiveness of the proposed algorithm through experiments on various datasets across diverse domains.",
+  "citation": 1
+}

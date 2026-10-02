@@ -1,0 +1,106 @@
+{
+  "name": "arxivjs-viewer",
+  "displayName": "ArxivJS Viewer",
+  "description": "arxivjs 데이터 폴더의 논문을 읽기 전용으로 열람한다.",
+  "version": "0.0.1",
+  "publisher": "arxivjs",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "arxiv",
+    "paper",
+    "markdown",
+    "katex"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "arxivjs",
+          "title": "ArxivJS",
+          "icon": "media/arxivjs.svg"
+        }
+      ]
+    },
+    "views": {
+      "arxivjs": [
+        {
+          "id": "arxivjs.topics",
+          "name": "Topics"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "arxivjs.topics",
+        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 설정 열기](command:workbench.action.openSettings?%5B%22arxivjs.dataFolder%22%5D)"
+      }
+    ],
+    "configuration": {
+      "title": "ArxivJS",
+      "properties": {
+        "arxivjs.dataFolder": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "arxivjs 데이터 폴더의 절대 경로. 이 확장은 이 폴더를 **읽기만** 한다."
+        },
+        "arxivjs.paperSort": {
+          "type": "string",
+          "enum": [
+            "citation",
+            "year",
+            "title"
+          ],
+          "enumDescriptions": [
+            "인용수 내림차순",
+            "연도 내림차순",
+            "제목 오름차순"
+          ],
+          "default": "citation",
+          "description": "논문 목록 정렬 기준"
+        },
+        "arxivjs.openInNewTab": {
+          "type": "boolean",
+          "default": false,
+          "description": "논문마다 새 탭을 연다. false이면 패널 하나를 재사용한다."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pretest:integration": "node esbuild.mjs && tsc -p test/integration",
+    "test:integration": "vscode-test",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "node esbuild.mjs --production"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.5",
+    "@types/vscode": "~1.90.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.11.0",
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

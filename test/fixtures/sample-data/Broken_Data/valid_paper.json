@@ -1,0 +1,8 @@
+{
+  "title": "Valid Paper In Broken Topic",
+  "authors": "Test Author",
+  "year": 2024,
+  "url": "https://example.com/valid",
+  "abstract": "Inline math $a^2+b^2=c^2$ in abstract.",
+  "citation": 1
+}

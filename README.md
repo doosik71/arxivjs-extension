@@ -221,8 +221,10 @@ npm install
 | -------------------------- | ------------------------------------------------------------- |
 | `npm run build`            | esbuild로 `dist/extension.js`를 번들한다.                     |
 | `npm run watch`            | 소스가 바뀌면 다시 번들한다.                                  |
+| `npm run typecheck`        | TypeScript 타입 검사만 한다(출력 파일 없음).                  |
 | `npm run lint`             | ESLint를 실행한다. 쓰기 API 사용 금지 규칙도 여기서 검사한다. |
 | `npm test`                 | 단위 테스트(vitest)를 실행한다.                               |
+| `npm run check`            | `typecheck` → `lint` → `test`를 차례로 실행한다.              |
 | `npm run test:integration` | VS Code 통합 테스트(`@vscode/test-electron`)를 실행한다.      |
 | `npm run package`          | `.vsix` 파일을 만든다.                                        |
 

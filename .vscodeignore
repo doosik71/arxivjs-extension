@@ -1,0 +1,14 @@
+.vscode/**
+.vscode-test/**
+src/**
+test/**
+out/**
+node_modules/**
+**/*.map
+**/*.ts
+esbuild.mjs
+eslint.config.mjs
+vitest.config.mts
+.vscode-test.mjs
+tsconfig.json
+DEV-PLAN.md
