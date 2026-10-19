@@ -49,16 +49,9 @@ export interface WriteHelpers {
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
-export function registerPaperCommands(host: PaperCommandHost, helpers: WriteHelpers, log: Logger): vscode.Disposable[] {
-  const { writableLibrary, reportError } = helpers;
-
-  const resolveTopic = async (node: unknown, title: string): Promise<Topic | undefined> => {
-    const n = node as TreeNode | undefined;
-    return n?.kind === 'topic' ? n.topic : host.pickTopic(title);
-  };
-
-  /** 쓰기 대상 논문. .json이 없는 논문(md만 있음)은 쓰기 기능을 쓰지 않는다 (DEV-PLAN §2.4). */
-  const resolveWritablePaper = (arg: unknown): PaperTarget | undefined => {
+/** 쓰기 대상 논문을 찾는다. .json이 없는 논문(md만 있음)은 쓰기 기능을 쓰지 않는다 (DEV-PLAN §2.4). */
+export function writablePaperResolver(host: Pick<PaperCommandHost, 'resolvePaper'>): (arg: unknown) => PaperTarget | undefined {
+  return (arg) => {
     const target = host.resolvePaper(arg);
     if (!target) {
       void vscode.window.showInformationMessage('ArxivJS: 대상 논문을 트리나 Paper 패널에서 고르세요.');
@@ -70,6 +63,17 @@ export function registerPaperCommands(host: PaperCommandHost, helpers: WriteHelp
     }
     return target;
   };
+}
+
+export function registerPaperCommands(host: PaperCommandHost, helpers: WriteHelpers, log: Logger): vscode.Disposable[] {
+  const { writableLibrary, reportError } = helpers;
+
+  const resolveTopic = async (node: unknown, title: string): Promise<Topic | undefined> => {
+    const n = node as TreeNode | undefined;
+    return n?.kind === 'topic' ? n.topic : host.pickTopic(title);
+  };
+
+  const resolveWritablePaper = writablePaperResolver(host);
 
   /** 진행률 알림을 띄우고 취소할 수 있게 실행한다. 취소하면 undefined */
   const withCancellableProgress = <T>(title: string, task: (signal: AbortSignal) => Promise<T>): Thenable<T | undefined> =>

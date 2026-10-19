@@ -1,10 +1,13 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { GEMINI_KEY_SECRET } from './commands/summaryCommands';
 import { registerWriteCommands } from './commands/writeCommands';
 import { CONFIG_SECTION, readConfig, saveDataFolder, type ArxivjsConfig } from './config';
 import { Library } from './data/library';
 import type { Paper, Topic } from './data/models';
 import { nodeReadonlyFs } from './data/readonlyFs';
+import type { PdfTextExtractor } from './sources/fullText';
+import { createPdfWorkerExtractor } from './sources/pdfWorkerClient';
 import { createLogger } from './util/log';
 import { citationText, paperDescription } from './views/format';
 import { HomePanelManager } from './views/homePanel';
@@ -283,6 +286,15 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         },
         metaEditor,
         fetch: (url, init) => fetch(url, init),
+        llmSettings: async () => ({
+          engine: config.llmEngine,
+          geminiModel: config.geminiModel,
+          geminiApiKey: await context.secrets.get(GEMINI_KEY_SECRET),
+          ollamaUrl: config.ollamaUrl,
+          ollamaModel: config.ollamaModel,
+        }),
+        secrets: context.secrets,
+        pdfExtractor: () => loadPdfExtractor(context.extensionPath),
       },
       log,
     ),
@@ -330,3 +342,8 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
 }
 
 export function deactivate(): void {}
+
+/** PDF 추출기. 따로 번들한 dist/pdfWorker.js를 추출할 때마다 작업자로 띄운다 (esbuild.mjs). */
+function loadPdfExtractor(extensionPath: string): PdfTextExtractor {
+  return createPdfWorkerExtractor(path.join(extensionPath, 'dist', 'pdfWorker.js'));
+}

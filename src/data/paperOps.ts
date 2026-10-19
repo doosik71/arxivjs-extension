@@ -275,6 +275,17 @@ export async function deletePaper(ctx: DataOpsContext, paper: Paper, topic: Topi
   }
 }
 
+/**
+ * 요약(.md)을 저장한다. 기존 파일은 백업 없이 덮어쓴다 (DEV-PLAN §2.8).
+ * 그사이 .json이 사라졌으면(다른 앱이 옮기거나 지움) 고아 파일을 만들지 않도록 conflict (§6.7).
+ */
+export async function writeSummary(ctx: DataOpsContext, paper: Paper, topic: Topic, markdown: string): Promise<void> {
+  if (!(await paperExists(ctx, topic, paper.stem))) {
+    throw new DataError('conflict', bundlePath(topic, paper.stem, '.json'), '논문의 메타 정보(.json)가 사라졌습니다. 다른 앱이 옮기거나 지웠을 수 있습니다.');
+  }
+  await ctx.writer.writeTextAtomic(bundlePath(topic, paper.stem, '.md'), markdown);
+}
+
 /** 요약(.md)과 하이라이트(.hlt)를 지운다. 백업을 만들지 않는다 (DEV-PLAN §2.8). .json과 .txt는 그대로다. */
 export async function deleteSummary(ctx: DataOpsContext, paper: Paper, topic: Topic): Promise<void> {
   await removeIfExists(ctx, bundlePath(topic, paper.stem, '.md'));

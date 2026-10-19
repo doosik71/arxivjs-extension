@@ -1,5 +1,5 @@
 // 쓰기 명령 (DEV-PLAN §3.2.2): 입력 UI, 확인 대화상자, 쓰기 후 다시 읽기.
-// 실제 파일 작업은 src/data/topicOps.ts → DataWriter가 한다. 논문 명령은 paperCommands.ts에 있다.
+// 실제 파일 작업은 src/data/topicOps.ts → DataWriter가 한다. 논문 명령은 paperCommands.ts, 요약 명령은 summaryCommands.ts에 있다.
 import * as vscode from 'vscode';
 import { DataError } from '../data/errors';
 import type { Library } from '../data/library';
@@ -9,8 +9,9 @@ import { toTopicFolderName } from '../util/displayName';
 import type { Logger } from '../util/logger';
 import type { TreeNode } from '../views/topicTreeProvider';
 import { registerPaperCommands, type PaperCommandHost } from './paperCommands';
+import { registerSummaryCommands, type SummaryCommandHost } from './summaryCommands';
 
-export interface WriteCommandHost extends PaperCommandHost {
+export interface WriteCommandHost extends PaperCommandHost, SummaryCommandHost {
   getLibrary(): Library | undefined;
   isWriteEnabled(): boolean;
   pickTopic(title: string): Promise<Topic | undefined>;
@@ -76,6 +77,7 @@ export function registerWriteCommands(host: WriteCommandHost, log: Logger): vsco
 
   return [
     ...registerPaperCommands(host, { writableLibrary, reportError }, log),
+    ...registerSummaryCommands(host, { writableLibrary, reportError }, log),
 
     vscode.commands.registerCommand('arxivjs.createTopic', async () => {
       const library = writableLibrary();

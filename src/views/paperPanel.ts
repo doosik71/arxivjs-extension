@@ -256,6 +256,9 @@ export class PaperPanelManager implements vscode.Disposable {
       case 'editMeta':
         this.host.runPaperCommand('arxivjs.editPaperMeta', entry.topic, entry.paper);
         return;
+      case 'summarize':
+        this.host.runPaperCommand('arxivjs.summarizePaper', entry.topic, entry.paper);
+        return;
       case 'deleteSummary':
         this.host.runPaperCommand('arxivjs.deleteSummary', entry.topic, entry.paper);
         return;
@@ -311,7 +314,11 @@ export class PaperPanelManager implements vscode.Disposable {
         headings,
         notices,
         writeActions: this.host.canWrite()
-          ? { editMeta: paper.jsonPath !== undefined && !paper.metaError, deleteSummary: paper.jsonPath !== undefined && paper.mdPath !== undefined }
+          ? {
+              editMeta: paper.jsonPath !== undefined && !paper.metaError,
+              deleteSummary: paper.jsonPath !== undefined && paper.mdPath !== undefined,
+              summarize: paper.jsonPath === undefined || paper.metaError ? undefined : paper.mdPath ? 'regenerate' : 'create',
+            }
           : undefined,
       },
       {

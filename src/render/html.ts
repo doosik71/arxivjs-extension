@@ -37,7 +37,7 @@ export interface PaperViewModel {
   headings: Heading[];
   notices: Notice[];
   /** 쓰기 버튼 (설정 arxivjs.enableWrite가 켜져 있을 때만) */
-  writeActions?: { editMeta: boolean; deleteSummary: boolean };
+  writeActions?: { editMeta: boolean; deleteSummary: boolean; summarize?: 'create' | 'regenerate' };
 }
 
 export interface WebviewResources {
@@ -122,7 +122,11 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
   const localButton = vm.localDocument
     ? `<button type="button" data-action="openLocal" title="${escapeHtml(vm.localDocument)}">로컬 문서 열기</button>`
     : '';
+  const summarize = vm.writeActions?.summarize;
   const writeButtons = [
+    summarize
+      ? `<button type="button" data-action="summarize" title="Gemini 또는 Ollama로 요약 문서(.md) 만들기">${summarize === 'create' ? '요약 생성' : '요약 다시 생성'}</button>`
+      : '',
     vm.writeActions?.editMeta ? '<button type="button" data-action="editMeta" title="메타 정보(.json) 편집">메타 편집</button>' : '',
     vm.writeActions?.deleteSummary ? '<button type="button" data-action="deleteSummary" title="요약 문서(.md)와 하이라이트 삭제">요약 삭제</button>' : '',
   ].join('');

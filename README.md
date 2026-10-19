@@ -6,9 +6,9 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 - 주제를 고르면 논문 목록과 메타 정보를 보여준다. 메타 정보는 제목, 저자, 연도, URL, 초록, 인용수, 출처다.
 - 논문을 고르면 요약 마크다운 문서를 렌더링해서 보여준다. 수식과 표도 렌더링한다.
 
-기본 설정에서는 데이터 폴더의 파일을 **수정하지 않는다.** 설정 `arxivjs.enableWrite`를 켜면 주제를 관리하고, arXiv에서 논문을 찾아 추가하고, 메타 정보를 고치고, 논문을 옮기거나 지울 수 있다([주제·논문 관리](#사용-방법) 참고). AI 요약은 다음 버전에서 추가할 예정이다.
+기본 설정에서는 데이터 폴더의 파일을 **수정하지 않는다.** 설정 `arxivjs.enableWrite`를 켜면 주제를 관리하고, arXiv에서 논문을 찾아 추가하고, 메타 정보를 고치고, 논문을 옮기거나 지울 수 있다. Gemini나 Ollama로 논문 요약 문서도 만든다([주제·논문 관리](#사용-방법), [AI 요약](#사용-방법) 참고).
 
-데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 지금은 요약 문서 생성과 하이라이트를 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
+데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 쓰기 기능은 arxivjs 앱 없이 동작한다. 하이라이트 편집은 지금도 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
 
 > 현재 버전: 0.2.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
@@ -173,6 +173,17 @@ ArxivJS (Activity Bar)
    - **요약 삭제**: 논문 노드의 오른쪽 클릭 메뉴나 Paper 패널의 `요약 삭제`. `.md`와 `.hlt`를 지운다. arxivjs 앱과 달리 `.bak` 백업을 남기지 않는다. 데이터 폴더가 git 저장소라면 `.md`는 git으로 되살릴 수 있다.
    - 메타 정보(`.json`)가 없는 논문(요약 문서만 있는 논문)은 편집, 이동, 삭제할 수 없다.
    - ⚠️ arxivjs 앱이 같은 폴더를 쓰고 있을 때는 같은 주제나 논문을 동시에 고치지 않는다. 잠금 기능이 없어서 나중에 쓴 쪽이 남는다.
+8. **AI 요약 (쓰기 기능)**
+   - **준비**
+     1. 데이터 폴더에 `userprompt.txt`가 있어야 한다. arxivjs 앱과 같은 파일이다. 논문 본문이 들어갈 자리에 `{context}`를 쓴다(첫 번째 것만 바뀐다).
+     2. 엔진을 고른다(설정 `arxivjs.llm.engine`).
+        - **Gemini**: 명령 `ArxivJS: Gemini API 키 설정`으로 키를 넣는다. 키는 `settings.json`이 아니라 OS 자격 증명 저장소(SecretStorage)에 저장된다. 모델은 `arxivjs.gemini.model`(기본 `gemini-2.5-flash`).
+        - **Ollama**: `arxivjs.ollama.url`(기본 `http://localhost:11434`)과 `arxivjs.ollama.model`(예: `gemma4:31b`)을 설정한다. Ollama의 기본 문맥 길이가 짧으면 긴 논문의 뒷부분이 잘린 채 요약되므로, Modelfile이나 Ollama 설정에서 `num_ctx`를 늘린다.
+   - **요약 생성**: 논문 노드의 오른쪽 클릭 메뉴나 Paper 패널의 `요약 생성`(요약이 있으면 `요약 다시 생성`).
+     - 전문 텍스트는 `<논문>.txt`가 있으면 그것을 쓴다. 없으면 PDF를 내려받아 텍스트를 뽑고 `.txt`로 저장한다. arXiv 논문은 abs 주소를 pdf 주소로 바꾸고, `source: pdf`는 URL을 그대로 쓴다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다.
+     - 진행률 알림에 받은 글자 수가 나온다. `취소`를 누르면 요약 문서는 바뀌지 않는다.
+     - 응답이 끝나야 `.md`를 저장한다. 기존 요약은 백업 없이 바뀐다(다시 만들기 전에 확인한다).
+   - **요약 없는 논문 일괄 요약**: 주제 노드의 오른쪽 클릭 메뉴. `.md`가 없는 논문을 한 편씩 차례로 요약한다. PDF를 내려받은 뒤에는 3초씩 기다린다(arXiv 요청 간격). 실패한 논문은 건너뛰고 끝에 결과를 알려 준다. 실패 이유는 출력 채널 `ArxivJS`에 있다.
 
 ### 설정 항목
 
@@ -184,6 +195,10 @@ ArxivJS (Activity Bar)
 | `arxivjs.paperPanelLocation` | `sameGroup` | 논문을 열 편집기 그룹. `sameGroup`은 논문 목록과 같은 그룹이라 화면을 나누지 않는다. `beside`는 목록 옆 그룹이다. |
 | `arxivjs.openHomeOnStartup`  | `true`      | ArxivJS 뷰를 처음 열 때 주제 목록(홈)을 함께 연다.                                                                |
 | `arxivjs.enableWrite`        | `false`     | 데이터 폴더 쓰기 기능을 켠다. 끄면 읽기만 한다.                                                                   |
+| `arxivjs.llm.engine`         | `gemini`    | AI 요약 엔진: `gemini`, `ollama`                                                                                |
+| `arxivjs.gemini.model`       | `gemini-2.5-flash` | Gemini 모델. API 키는 명령 `ArxivJS: Gemini API 키 설정`으로 넣는다(SecretStorage).                         |
+| `arxivjs.ollama.url`         | `http://localhost:11434` | Ollama 서버 주소                                                                                       |
+| `arxivjs.ollama.model`       | `""`        | Ollama 모델 (예: `gemma4:31b`)                                                                                  |
 
 ### 명령 목록
 
@@ -206,6 +221,10 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | `ArxivJS: 논문을 다른 주제로 이동` | 논문 파일을 다른 주제로 옮긴다. (쓰기 기능) |
 | `ArxivJS: 논문 삭제`        | 논문 파일을 지운다. (쓰기 기능)              |
 | `ArxivJS: 요약 삭제`        | 요약 문서(.md)와 하이라이트를 지운다. (쓰기 기능) |
+| `ArxivJS: 요약 생성`        | Gemini 또는 Ollama로 논문 요약(.md)을 만든다. (쓰기 기능) |
+| `ArxivJS: 요약 없는 논문 일괄 요약` | 주제에서 요약이 없는 논문을 차례로 요약한다. (쓰기 기능) |
+| `ArxivJS: Gemini API 키 설정` | Gemini API 키를 SecretStorage에 저장한다. |
+| `ArxivJS: Gemini API 키 삭제` | 저장한 Gemini API 키를 지운다. |
 
 쓰기 기능 명령은 `arxivjs.enableWrite`가 켜져 있을 때만 보인다.
 
@@ -282,7 +301,7 @@ npm install
 
 | 스크립트                   | 설명                                                          |
 | -------------------------- | ------------------------------------------------------------- |
-| `npm run build`            | esbuild로 `dist/extension.js`를 번들한다.                     |
+| `npm run build`            | esbuild로 `dist/extension.js`와 PDF 추출 작업자 `dist/pdfWorker.js`를 번들한다. |
 | `npm run watch`            | 소스가 바뀌면 다시 번들한다.                                  |
 | `npm run typecheck`        | TypeScript 타입 검사만 한다(출력 파일 없음).                  |
 | `npm run lint`             | ESLint를 실행한다. 쓰기 API 사용 금지 규칙도 여기서 검사한다. |

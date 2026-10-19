@@ -336,7 +336,7 @@ UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"�
 | HTTP         | 전역 `fetch`                                        | arXiv API, PDF 다운로드, Gemini/Ollama REST. 추가 의존성 없음.                     |
 | LLM          | Gemini REST(`streamGenerateContent`), Ollama REST(`/api/generate`) | SDK 없이 REST를 직접 호출한다. 의존성을 늘리지 않고, 테스트에서 `fetch`를 주입하기 쉽다. |
 | arXiv 응답   | 직접 작성한 작은 Atom 파서 (`src/sources/arxiv.ts`) | (P8에서 결정) 필요한 필드가 `<entry>`의 id, title, summary, published, author/name뿐이다. 후보였던 `fast-xml-parser` 5.x는 하위 의존성 6개, 1.3MB라 쓰지 않았다. 실제 arXiv 응답으로 확인했다. |
-| PDF 텍스트   | 후보: `pdf-parse`(arxivjs와 같음) 또는 `pdfjs-dist` | P9에서 확정한다. esbuild 번들, `.vsix` 크기, 라이선스를 확인한다(§11 R8).          |
+| PDF 텍스트   | `unpdf` 1.8.1 (MIT, 의존성 없음, 최신 pdf.js 내장)   | (P9에서 결정) `pdf-parse` 2.x는 네이티브 모듈(`@napi-rs/canvas`)이 필요하고 21MB다. 1.x(arxivjs)는 2018년 pdf.js라 CVE-2024-4367 범위다. `pdfjs-dist`는 35MB, ESM 전용이다. unpdf의 pdf.js 빌드에는 글꼴 eval 경로가 없다. 공개된 지 두 달이 넘은 1.8.1로 고정했다. |
 | 테스트       | `vitest`(순수 로직) + `@vscode/test-electron`(통합) |                                                                                    |
 | 린트         | ESLint + `no-restricted-syntax` 규칙                | 쓰기 API를 `dataWriter.ts` 밖에서 쓰지 못하게 막는다(§7).                          |
 | 패키징       | `@vscode/vsce`                                      | `.vsix` 배포                                                                       |
@@ -377,9 +377,13 @@ arxivjs-extension/
 │   │   └── models.ts            # Topic, Paper, PaperMeta 타입
 │   ├── sources/                 # ★ 외부 데이터 (vscode 비의존, fetch 주입)
 │   │   ├── arxiv.ts             # arXiv 검색, ID/URL 조회, Atom 파싱
-│   │   └── fullText.ts          # .txt 캐시 → PDF 다운로드 → 텍스트 추출
+│   │   ├── fullText.ts          # .txt 캐시 → PDF 다운로드 → 텍스트 추출 → .txt 저장
+│   │   ├── pdfText.ts           # unpdf로 PDF → 텍스트
+│   │   ├── pdfWorker.ts         # 작업자 진입점 (dist/pdfWorker.js로 따로 번들)
+│   │   └── pdfWorkerClient.ts   # 추출할 때마다 작업자를 띄우는 PdfTextExtractor
 │   ├── llm/                     # ★ (vscode 비의존, fetch 주입)
-│   │   ├── engine.ts            # LlmEngine 인터페이스, 스트리밍, AbortSignal
+│   │   ├── common.ts            # LlmError, 스트림 줄 읽기(SSE·NDJSON), 오류 응답 해석
+│   │   ├── engine.ts            # LlmSettings, 설정 검사, 엔진 선택
 │   │   ├── gemini.ts            # Gemini REST
 │   │   ├── ollama.ts            # Ollama REST
 │   │   └── summarize.ts         # userprompt.txt + 전문 → LLM → .md 저장
@@ -648,12 +652,14 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 
 형식 명세 §9.2를 따르되 백업을 하지 않는다.
 
-1. **프롬프트**: 데이터 루트의 `userprompt.txt`를 읽는다. 없으면 요약을 시작하지 않고 "데이터 폴더에 userprompt.txt가 필요하다"고 안내한다(확장이 기본 프롬프트를 만들지 않는다). 첫 번째 `{context}`만 전문으로 바꾼다.
+1. **프롬프트**: 데이터 루트의 `userprompt.txt`를 읽는다. 없거나 `{context}`가 없으면 요약을 시작하지 않고 안내한다(확장이 기본 프롬프트를 만들지 않는다). 첫 번째 `{context}`만 전문으로 바꾼다. 본문의 `$&` 같은 문자열이 치환 패턴으로 해석되지 않게 함수로 바꾼다.
 2. **전문 텍스트**:
    - `<paperId>.txt`가 있고 비어 있지 않으면 그것을 쓴다.
    - 없으면 `source`에 따라 PDF를 내려받는다. `arxiv`(또는 `source` 없음)는 `url`의 `/abs/`를 `/pdf/`로 바꾼다. `pdf`는 `url`을 그대로 쓴다. 텍스트를 뽑아 `<paperId>.txt`로 저장한다.
    - `manual`인데 `.txt`가 없으면 요약할 수 없다고 알린다.
-   - PDF 원본은 저장하지 않는다.
+   - PDF 원본은 저장하지 않는다. 받은 파일이 `%PDF-`로 시작하지 않거나 100MB를 넘으면 거부한다. 다운로드 제한 시간은 120초다.
+   - **추출은 worker thread에서 한다** (`dist/pdfWorker.js`). pdf.js(unpdf)는 `navigator`, `DOMMatrix` 같은 전역을 고치는데, 확장 호스트의 전역은 다른 확장과 함께 쓰고 `navigator`는 읽기 전용이라 그대로 실행하면 실패한다(통합 테스트로 확인). 작업자는 추출 한 번마다 만들고 끝나면 종료한다. 무거운 해석이 확장 호스트를 막지 않는 효과도 있다.
+   - 텍스트가 비면(스캔한 이미지 PDF) 요약하지 않는다.
 3. **LLM 호출**: 선택한 엔진에 스트리밍으로 보낸다.
 4. **저장**: 응답이 끝나면 `<paperId>.md`를 원자적으로 덮어쓴다. 실패하거나 취소되면 `.md`를 바꾸지 않는다(`.txt`는 이미 저장됐을 수 있다).
 
@@ -711,7 +717,8 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 | R5  | 원격 이미지를 불러오면 외부 네트워크 요청이 생긴다.                                          | CSP `img-src https:`로 허용한다. 필요하면 설정으로 차단할 수 있게 하는 것을 검토한다.                                        |
 | R6  | **쓰기 경합**: arxivjs 앱과 동시에 같은 파일을 쓰면 나중에 쓴 쪽이 남는다.                   | 원자적 쓰기, 쓰기 직전 재확인(§6.7). README에 "두 앱으로 같은 논문을 동시에 편집하지 말 것"을 적는다.                        |
 | R7  | json 없는 md를 표시하는 것은 형식 명세(고아 파일 무시)와 다르다.                             | 0.2.0 동작 유지, 쓰기 기능 제외(§2.4). 명세에 맞출지는 추후 결정한다.                                                        |
-| R8  | PDF 텍스트 추출 라이브러리의 번들 문제. `pdf-parse` 1.x는 모듈 진입점에서 테스트 파일을 읽는 코드가 있다. | P9에서 `pdf-parse/lib/pdf-parse.js` 직접 import 또는 `pdfjs-dist`를 비교하고, `.vsix` 크기와 라이선스를 확인해 정한다.       |
+| R8  | PDF 텍스트 추출 라이브러리의 번들 문제. `pdf-parse` 1.x는 모듈 진입점에서 테스트 파일을 읽는 코드가 있다. | (P9에서 해결) `unpdf`를 worker용 별도 번들(`dist/pdfWorker.js`, 2.3MB)로 만들었다. 메인 번들 크기는 그대로다(§4, §8.3). |
+| R13 | Ollama의 기본 문맥 길이(num_ctx)가 짧으면 긴 논문의 뒷부분이 잘린 채 요약된다. arxivjs도 같다.                | 확장은 num_ctx를 지정하지 않는다. README에 Modelfile이나 Ollama 설정으로 문맥 길이를 늘리라고 안내한다.                       |
 | R9  | 요약 덮어쓰기와 요약 삭제는 되돌릴 수 없다(`.bak` 없음).                                     | 모달 확인. 데이터 루트가 git 저장소이면 `.md`는 git으로 되돌릴 수 있다고 README에 안내한다.                                  |
 | R10 | arXiv API 이용 제한(요청 간격 3초 권고).                                                     | 검색은 사용자 동작 단위로만 호출하고, 일괄 요약은 PDF 다운로드 사이에 간격을 둔다(§8.4).                                     |
 | R11 | 확장 표시 이름은 바뀌지만 ID(`arxivjs-viewer`)와 `.vsix` 파일 이름은 "viewer"로 남는다.      | 사용자 결정. 기존 설치와의 연결을 유지하기 위해서다. README에 함께 적는다.                                                   |
@@ -719,7 +726,7 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 
 ## 12. 진행 현황 (2026-10-19 기준)
 
-P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6–P8을 마쳤고 P9–P10이 남았다.
+P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6–P9를 마쳤고 P10이 남았다.
 
 게시 정보는 다음과 같다.
 
@@ -739,7 +746,7 @@ P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 �
 | P6 이름·규칙 정리    | 완료 | 표시 이름 변경, 형식 명세 §6 토픽 이름 규칙, fixture 경계 사례 |
 | P7 쓰기 기반·토픽    | 완료 | `enableWrite`, `DataWriter`, ESLint 쓰기 지점 예외, 주제 추가·이름 변경·삭제 |
 | P8 논문 관리         | 완료 | arXiv 검색·ID 조회, 직접 입력, 메타 편집 폼, 이동·삭제·요약 삭제 |
-| P9 AI 요약           | 예정 |                                                               |
+| P9 AI 요약           | 완료 | SecretStorage 키, Gemini/Ollama REST 스트리밍, PDF 작업자, 단건·일괄 요약 |
 | P10 품질·배포        | 예정 |                                                               |
 
 ### 0.2.0 검증 결과

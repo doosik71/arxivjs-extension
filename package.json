@@ -114,6 +114,35 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "데이터 폴더 **쓰기 기능**을 켠다. 켜면 주제 추가·이름 변경·삭제 같은 명령이 나타나고, 확장이 데이터 폴더의 파일을 만들거나 바꾸거나 지운다. 끄면 읽기만 한다.\n\n⚠️ arxivjs 앱과 같은 파일을 동시에 고치지 않는다. 나중에 쓴 쪽이 남는다."
+        },
+        "arxivjs.llm.engine": {
+          "type": "string",
+          "enum": [
+            "gemini",
+            "ollama"
+          ],
+          "enumDescriptions": [
+            "Google Gemini (API 키 필요: 명령 \"ArxivJS: Gemini API 키 설정\")",
+            "로컬 또는 원격 Ollama 서버"
+          ],
+          "default": "gemini",
+          "description": "AI 요약에 쓸 엔진"
+        },
+        "arxivjs.gemini.model": {
+          "type": "string",
+          "default": "gemini-2.5-flash",
+          "description": "Gemini 모델 이름. API 키는 설정이 아니라 OS 자격 증명 저장소(SecretStorage)에 저장한다."
+        },
+        "arxivjs.ollama.url": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "scope": "machine",
+          "description": "Ollama 서버 주소"
+        },
+        "arxivjs.ollama.model": {
+          "type": "string",
+          "default": "",
+          "description": "Ollama 모델 이름 (예: gemma4:31b)"
         }
       }
     },
@@ -165,6 +194,30 @@
         "title": "요약 삭제",
         "category": "ArxivJS",
         "icon": "$(trash)"
+      },
+      {
+        "command": "arxivjs.summarizePaper",
+        "title": "요약 생성",
+        "category": "ArxivJS",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "arxivjs.summarizeTopic",
+        "title": "요약 없는 논문 일괄 요약",
+        "category": "ArxivJS",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "arxivjs.setGeminiApiKey",
+        "title": "Gemini API 키 설정",
+        "category": "ArxivJS",
+        "icon": "$(key)"
+      },
+      {
+        "command": "arxivjs.clearGeminiApiKey",
+        "title": "Gemini API 키 삭제",
+        "category": "ArxivJS",
+        "icon": "$(key)"
       },
       {
         "command": "arxivjs.openHome",
@@ -325,6 +378,16 @@
           "command": "arxivjs.deletePaper",
           "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/ && config.arxivjs.enableWrite",
           "group": "2_edit@4"
+        },
+        {
+          "command": "arxivjs.summarizeTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic && config.arxivjs.enableWrite",
+          "group": "1_summary@0"
+        },
+        {
+          "command": "arxivjs.summarizePaper",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/ && config.arxivjs.enableWrite",
+          "group": "1_summary@0"
         }
       ],
       "commandPalette": [
@@ -358,6 +421,14 @@
         },
         {
           "command": "arxivjs.deleteSummary",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.summarizePaper",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.summarizeTopic",
           "when": "config.arxivjs.enableWrite"
         },
         {
@@ -404,6 +475,7 @@
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",
     "katex": "^0.16.47",
-    "markdown-it": "^15.0.2"
+    "markdown-it": "^15.0.2",
+    "unpdf": "1.8.1"
   }
 }

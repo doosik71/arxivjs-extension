@@ -6,7 +6,8 @@ import type { NewPaper } from '../data/paperOps';
 export const ARXIV_API = 'https://export.arxiv.org/api/query';
 const TIMEOUT_MS = 30000;
 
-export type FetchFn = (url: string, init?: { signal?: AbortSignal }) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;
+/** 네트워크 접근 함수. 확장은 전역 fetch를 넘기고, 테스트는 가짜를 넘긴다. */
+export type FetchFn = typeof fetch;
 
 export interface ArxivEntry {
   /** 버전을 포함한 arXiv ID (예: 2310.16485v2) */

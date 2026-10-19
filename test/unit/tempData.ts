@@ -36,6 +36,15 @@ export function putFile(data: TempData, rel: string, content: string, mtime?: Da
   return full;
 }
 
+/** 임시 복사본 안의 파일을 지운다. */
+export function removeTempFile(data: TempData, rel: string): void {
+  const full = path.join(data.root, rel);
+  if (path.relative(data.root, full).startsWith('..')) {
+    throw new Error(`임시 복사본 밖의 경로: ${rel}`);
+  }
+  rmSync(full);
+}
+
 function makeWritable(dir: string): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);

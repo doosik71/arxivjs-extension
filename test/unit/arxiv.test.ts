@@ -51,8 +51,7 @@ const ERROR_FEED = `<feed xmlns="http://www.w3.org/2005/Atom">
   </entry>
 </feed>`;
 
-const fakeFetch = (body: string, status = 200) =>
-  vi.fn<FetchFn>(async () => ({ ok: status >= 200 && status < 300, status, text: async () => body }));
+const fakeFetch = (body: string, status = 200) => vi.fn<FetchFn>(async () => new Response(body, { status }));
 
 describe('parseArxivId', () => {
   it.each([
@@ -117,7 +116,7 @@ describe('searchArxiv / fetchArxivById', () => {
     const fetch = fakeFetch(FEED);
     const entries = await searchArxiv('few shot', { fetch, maxResults: 20 });
     expect(entries).toHaveLength(2);
-    const url = new URL(fetch.mock.calls[0][0]);
+    const url = new URL(String(fetch.mock.calls[0][0]));
     expect(`${url.origin}${url.pathname}`).toBe(ARXIV_API);
     expect(url.searchParams.get('search_query')).toBe('all:few AND all:shot');
     expect(url.searchParams.get('max_results')).toBe('20');
@@ -133,7 +132,7 @@ describe('searchArxiv / fetchArxivById', () => {
   it('ID 조회: id_list로 부르고, 없으면 undefined', async () => {
     const fetch = fakeFetch(FEED);
     expect((await fetchArxivById('1904.04232', { fetch }))?.arxivId).toBe('1904.04232v2');
-    expect(new URL(fetch.mock.calls[0][0]).searchParams.get('id_list')).toBe('1904.04232');
+    expect(new URL(String(fetch.mock.calls[0][0])).searchParams.get('id_list')).toBe('1904.04232');
     expect(await fetchArxivById('1234', { fetch: fakeFetch(ERROR_FEED) })).toBeUndefined();
   });
 

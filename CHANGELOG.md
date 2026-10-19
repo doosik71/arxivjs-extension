@@ -15,6 +15,11 @@
   - **논문 이동**: `.json`, `.md`, `.hlt`, `.txt`를 함께 옮기고 원본 주제의 백업 파일을 지운다. 대상에 같은 논문이 있으면 arxivjs 형식 명세 §9.3대로 한쪽을 남긴다.
   - **논문 삭제**, **요약 삭제**(`.md`와 `.hlt`, 백업 없음).
   - Topic 패널에 `+ 논문 추가`, Paper 패널에 `메타 편집`·`요약 삭제` 버튼을 넣었다.
+- 쓰기 기능을 켜면 **AI 요약**을 만들 수 있다. arxivjs 앱 없이 Gemini나 Ollama를 직접 부른다.
+  - **요약 생성**(논문 메뉴, Paper 패널의 `요약 생성`/`요약 다시 생성`)과 **요약 없는 논문 일괄 요약**(주제 메뉴). 진행률 알림에서 취소할 수 있고, 응답이 끝나야 `.md`를 저장한다. 기존 요약은 백업 없이 바뀐다.
+  - 프롬프트는 데이터 폴더의 `userprompt.txt`(`{context}` 자리에 본문)를 쓴다.
+  - 전문 텍스트는 `.txt` 캐시를 쓰고, 없으면 PDF를 내려받아 텍스트를 뽑아 `.txt`로 저장한다. PDF 해석은 `unpdf`(최신 pdf.js)를 별도 작업자(worker thread)에서 실행한다.
+  - 설정 `arxivjs.llm.engine`, `arxivjs.gemini.model`, `arxivjs.ollama.url`, `arxivjs.ollama.model`. Gemini API 키는 명령 `ArxivJS: Gemini API 키 설정`/`삭제`로 SecretStorage에 둔다.
 
 ### 바뀜
 

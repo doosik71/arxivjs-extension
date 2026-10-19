@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { PaperSort } from './data/models';
+import type { LlmEngineName } from './llm/engine';
 
 export const CONFIG_SECTION = 'arxivjs';
 
@@ -18,6 +19,11 @@ export interface ArxivjsConfig {
   openHomeOnStartup: boolean;
   /** 데이터 폴더 쓰기 기능 (기본 false, DEV-PLAN §1.3) */
   enableWrite: boolean;
+  /** 요약 엔진과 모델 (DEV-PLAN §8.1). Gemini API 키는 SecretStorage에 따로 둔다. */
+  llmEngine: LlmEngineName;
+  geminiModel: string;
+  ollamaUrl: string;
+  ollamaModel: string;
 }
 
 export type PaperPanelLocation = 'sameGroup' | 'beside';
@@ -36,6 +42,10 @@ export function readConfig(): ArxivjsConfig {
     paperPanelLocation: c.get<string>('paperPanelLocation') === 'beside' ? 'beside' : 'sameGroup',
     openHomeOnStartup: c.get<boolean>('openHomeOnStartup') ?? true,
     enableWrite: c.get<boolean>('enableWrite') === true,
+    llmEngine: c.get<string>('llm.engine') === 'ollama' ? 'ollama' : 'gemini',
+    geminiModel: (c.get<string>('gemini.model') ?? '').trim() || 'gemini-2.5-flash',
+    ollamaUrl: (c.get<string>('ollama.url') ?? '').trim() || 'http://localhost:11434',
+    ollamaModel: (c.get<string>('ollama.model') ?? '').trim(),
   };
 }
 
