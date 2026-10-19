@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { registerWriteCommands } from './commands/writeCommands';
 import { CONFIG_SECTION, readConfig, saveDataFolder, type ArxivjsConfig } from './config';
 import { Library } from './data/library';
 import type { Paper, Topic } from './data/models';
@@ -31,7 +32,9 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   let library: Library | undefined;
 
   const createLibrary = () => {
-    library = config.dataFolder ? new Library(config.dataFolder, nodeReadonlyFs, log, () => config.paperSort) : undefined;
+    library = config.dataFolder
+      ? new Library(config.dataFolder, nodeReadonlyFs, log, () => config.paperSort, () => config.enableWrite)
+      : undefined;
     log.info(`데이터 폴더: ${config.dataFolder ?? '(설정 안 됨)'}`);
   };
   createLibrary();
@@ -106,6 +109,8 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       openTopic: (topic) => void topicPanel.show(topic),
       selectDataFolder: () => void vscode.commands.executeCommand('arxivjs.selectDataFolder'),
       reloadAll,
+      canWrite: () => config.enableWrite,
+      createTopic: () => void vscode.commands.executeCommand('arxivjs.createTopic'),
     },
     log,
   );
@@ -231,6 +236,28 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       }
     }),
 
+    ...registerWriteCommands(
+      {
+        getLibrary: () => library,
+        isWriteEnabled: () => config.enableWrite,
+        pickTopic,
+        reloadAll,
+        onTopicRenamed: async (oldId, newId) => {
+          panels.closeTopic(oldId); // 경로가 바뀌었으므로 논문 패널은 닫는다.
+          const renamed = await library?.topics.get(newId);
+          if (renamed && topicPanel.currentTopicId === oldId) {
+            await topicPanel.show(renamed);
+          }
+        },
+        onTopicDeleted: (topicId) => {
+          panels.closeTopic(topicId);
+          topicPanel.closeTopic(topicId);
+        },
+        revealTopic,
+      },
+      log,
+    ),
+
     vscode.commands.registerCommand('arxivjs.openSettings', () =>
       vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${context.extension.id}`),
     ),
@@ -250,6 +277,10 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         void home.refresh(); // 홈은 닫지 않고 새 데이터 폴더의 주제로 다시 그린다.
       } else if (config.paperSort !== previous.paperSort) {
         tree.refresh(); // 캐시는 그대로 두고 정렬만 다시 한다.
+      }
+      if (config.enableWrite !== previous.enableWrite) {
+        log.info(`데이터 폴더 쓰기: ${config.enableWrite ? '켜짐' : '꺼짐'}`);
+        void home.refresh(); // 쓰기 버튼을 보이거나 숨긴다.
       }
     }),
   );

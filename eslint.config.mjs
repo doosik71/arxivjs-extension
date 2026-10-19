@@ -1,11 +1,12 @@
 // ESLint 설정
 //
-// 이 확장은 데이터 폴더를 절대 수정하지 않는다(DEV-PLAN §7).
-// 아래 규칙으로 쓰기 API 사용을 정적으로 차단한다.
-//   1. 파일 시스템 모듈(fs 등)은 src/data/readonlyFs.ts에서만 import/require 할 수 있다.
-//   2. 쓰기·변경 API 이름은 어디에서도 쓸 수 없다.
+// 데이터 폴더 쓰기는 src/data/dataWriter.ts 한 곳에서만 한다(DEV-PLAN §7).
+// 아래 규칙으로 그 밖의 쓰기 API 사용을 정적으로 차단한다.
+//   1. 파일 시스템 모듈(fs 등)은 src/data/readonlyFs.ts(읽기)와 src/data/dataWriter.ts(쓰기)에서만 import/require 할 수 있다.
+//   2. 쓰기·변경 API 이름은 dataWriter.ts 밖에서는 쓸 수 없다.
 //   3. readonlyFs.ts에서는 Map.delete 등과 이름이 겹쳐 전역 금지가 어려운
 //      일반 이름(write, rm, cp, open 등)까지 추가로 금지한다.
+//   4. vscode.workspace.fs 쓰기와 WorkspaceEdit 등 편집 API는 dataWriter.ts에서도 금지한다.
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -29,10 +30,12 @@ const WRITE_APIS = [
 const AMBIGUOUS_WRITE_APIS = ['write', 'rm', 'cp', 'link', 'delete', 'copy', 'open', 'openSync'];
 // vscode.workspace.fs.delete / .copy 처럼 `.fs.` 아래의 일반 이름
 const WORKSPACE_FS_WRITE = ['delete', 'copy', 'rename', 'writeFile', 'createDirectory'];
+// dataWriter.ts에서도 금지하는 vscode 편집 API
+const VSCODE_EDIT_APIS = ['createDirectory', 'applyEdit', 'openTextDocument', 'WorkspaceEdit'];
 
 const re = (names) => `/^(${names.join('|')})$/`;
-const MSG = '읽기 전용 확장: 쓰기·변경 API는 사용할 수 없다 (DEV-PLAN §7).';
-const FS_MSG = '데이터 폴더 접근은 src/data/readonlyFs.ts를 통해서만 한다.';
+const MSG = '쓰기·변경 API는 src/data/dataWriter.ts에서만 쓸 수 있다 (DEV-PLAN §7).';
+const FS_MSG = '파일 시스템 접근은 src/data/readonlyFs.ts(읽기)와 src/data/dataWriter.ts(쓰기)에서만 한다.';
 
 const banNames = (names) => [
   { selector: `MemberExpression[property.name=${re(names)}]`, message: MSG },
@@ -70,11 +73,26 @@ export default tseslint.config(
     },
   },
   {
+    // 유일한 쓰기 지점: fs 쓰기 API를 허용한다. vscode 편집 API는 여기서도 금지한다.
+    files: ['src/data/dataWriter.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': ['error', ...banNames(VSCODE_EDIT_APIS), ...banWorkspaceFsWrites],
+    },
+  },
+  {
     // 테스트는 fixture를 읽기 위해 fs import를 허용한다. 쓰기 금지는 유지한다.
     files: ['test/**/*.ts'],
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': ['error', ...commonRestrictions],
+    },
+  },
+  {
+    // 쓰기 테스트용 임시 복사본을 만들고 지우는 도우미. 임시 폴더(os.tmpdir) 밖에는 쓰지 않는다.
+    files: ['test/unit/tempData.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...banNames(VSCODE_EDIT_APIS)],
     },
   },
   {

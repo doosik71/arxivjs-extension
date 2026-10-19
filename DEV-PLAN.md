@@ -243,22 +243,22 @@ json이 없는 항목에는 쓰기 기능(요약, 편집, 이동)을 제공하�
   - `↓`: 첫 주제로 포커스를 옮긴다.
 - 정렬은 이름순과 논문 수순 두 가지다. 주제를 누르면 Topic 패널이 열린다.
 - Reload(전체·주제·논문)와 데이터 폴더 변경을 모두 반영한다. 데이터 폴더가 바뀌어도 홈은 닫지 않고 새 폴더로 다시 그린다.
-- 쓰기가 켜져 있으면 홈에 `+ 토픽 추가` 버튼을 둔다.
+- 쓰기가 켜져 있으면 홈에 `+ 주제 추가` 버튼을 둔다.
 
 ### 3.2.2 쓰기 상호작용 (0.3.0, `arxivjs.enableWrite` 켜짐)
 
-입력은 VS Code 기본 UI(`showInputBox`, `showQuickPick`, 확인 대화상자)를 우선 쓴다. 여러 필드를 한꺼번에 입력해야 하는 메타 정보 편집만 Webview 폼을 쓴다.
+UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"과 같은 뜻). 입력은 VS Code 기본 UI(`showInputBox`, `showQuickPick`, 확인 대화상자)를 우선 쓴다. 여러 필드를 한꺼번에 입력해야 하는 메타 정보 편집만 Webview 폼을 쓴다.
 
 | 위치                         | 동작                    | 결과                                                                                                                       |
 | ---------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| TOPICS 제목줄 `[+]`, 홈      | 토픽 추가               | InputBox로 표시명을 받는다. 허용 문자와 중복을 입력 중에 검사한다(§2.2). 폴더를 만든다.                                    |
-| 주제 노드 컨텍스트 메뉴      | 토픽 이름 변경          | InputBox(현재 표시명이 기본값). 대상이 있으면 거부한다. 폴더 이름만 바뀌고 안의 파일 이름은 그대로다.                      |
-| 주제 노드 컨텍스트 메뉴      | 토픽 삭제               | 폴더가 **완전히 비어 있을 때만** 지운다. 파일이 남아 있으면(`.txt`, `.bak` 포함) 이유를 알리고 지우지 않는다.              |
+| TOPICS 제목줄 `[+]`, 홈      | 주제 추가               | InputBox로 표시명을 받는다. 허용 문자와 중복을 입력 중에 검사한다(§2.2). 폴더를 만든다.                                    |
+| 주제 노드 컨텍스트 메뉴      | 주제 이름 변경          | InputBox(현재 표시명이 기본값). 대상이 있으면 거부한다. 폴더 이름만 바뀌고 안의 파일 이름은 그대로다.                      |
+| 주제 노드 컨텍스트 메뉴      | 주제 삭제               | 폴더가 **완전히 비어 있을 때만** 지운다. 파일이 남아 있으면(`.txt`, `.bak` 포함) 확인 대화상자 전에 남은 파일을 알리고 지우지 않는다. |
 | 주제 노드 메뉴, Topic 패널 `[+]` | 논문 추가               | QuickPick: `arXiv 검색` / `arXiv URL·ID` / `직접 입력` (§6.6.2)                                                            |
 | 주제 노드 컨텍스트 메뉴      | 요약 없는 논문 일괄 요약 | 그 주제에서 `.md`가 없는 논문을 차례로 요약한다. 진행률 알림에 취소 버튼을 둔다(§8.4).                                     |
 | 논문 노드 메뉴, Paper 패널   | 요약 생성 / 다시 생성   | 요약이 있으면 덮어쓸지 확인한다. 진행률 알림에서 취소할 수 있다. 끝나면 Paper 패널을 다시 그린다.                          |
 | 논문 노드 메뉴, Paper 패널   | 메타 정보 편집          | Webview 폼(title, authors, year, url, abstract, citation, source). 저장하면 read-modify-write로 `.json`을 고친다.          |
-| 논문 노드 메뉴               | 다른 토픽으로 이동      | QuickPick으로 대상 토픽을 고른다. 번들 단위로 옮긴다(§6.6.4).                                                             |
+| 논문 노드 메뉴               | 다른 주제로 이동        | QuickPick으로 대상 주제를 고른다. 번들 단위로 옮긴다(§6.6.4).                                                             |
 | 논문 노드 메뉴               | 논문 삭제               | 모달 확인 후 번들을 지운다(§6.6.5).                                                                                        |
 | 논문 노드 메뉴, Paper 패널   | 요약 삭제               | 모달 확인 후 `.md`와 `.hlt`를 지운다(§2.8). 되돌릴 수 없다고 안내한다.                                                     |
 
@@ -287,12 +287,12 @@ json이 없는 항목에는 쓰기 기능(요약, 편집, 이동)을 제공하�
 
 | ID                            | 제목                                  |
 | ----------------------------- | ------------------------------------- |
-| `arxivjs.createTopic`         | ArxivJS: 토픽 추가                    |
-| `arxivjs.renameTopic`         | ArxivJS: 토픽 이름 변경               |
-| `arxivjs.deleteTopic`         | ArxivJS: 토픽 삭제                    |
+| `arxivjs.createTopic`         | ArxivJS: 주제 추가                    |
+| `arxivjs.renameTopic`         | ArxivJS: 주제 이름 변경               |
+| `arxivjs.deleteTopic`         | ArxivJS: 주제 삭제                    |
 | `arxivjs.addPaper`            | ArxivJS: 논문 추가                    |
 | `arxivjs.editPaperMeta`       | ArxivJS: 메타 정보 편집               |
-| `arxivjs.movePaper`           | ArxivJS: 논문을 다른 토픽으로 이동    |
+| `arxivjs.movePaper`           | ArxivJS: 논문을 다른 주제로 이동      |
 | `arxivjs.deletePaper`         | ArxivJS: 논문 삭제                    |
 | `arxivjs.summarizePaper`      | ArxivJS: 요약 생성                    |
 | `arxivjs.summarizeTopic`      | ArxivJS: 요약 없는 논문 일괄 요약     |
@@ -446,10 +446,10 @@ interface Paper {
 | 모듈                 | API                                                                                                                                         |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `readonlyFs.ts`      | `ReadonlyFileSystem { readText, readDir, stat }`, `nodeReadonlyFs`. 오류는 `DataError(kind: notFound \| notDirectory \| io)`로 바꿔 던진다. |
-| `dataWriter.ts` ★    | `DataWriter { writeTextAtomic, mkdir, rename, removeFile, removeEmptyDir }`. 모든 경로가 데이터 폴더 안인지 검사한다. 쓰기가 꺼져 있으면 `writeDisabled`. |
+| `dataWriter.ts` ★    | `DataWriter { writeTextAtomic, makeDirectory, move, removeFile, removeEmptyDirectory }`, `createDataWriter({ root, isEnabled })`. 대상이 데이터 폴더의 주제 폴더나 그 안의 파일인지 검사한다(아니면 `invalidPath`). 쓰기가 꺼져 있으면 `writeDisabled`. 대상이 있거나 폴더가 비어 있지 않으면 `conflict`. 메서드 이름은 ESLint가 금지하는 fs API 이름과 겹치지 않게 지었다. |
 | `topicRepository.ts` | `list()`, `get(id)`, `reload()`                                                                                                             |
 | `paperRepository.ts` | `list(topic)`, `isLoaded(topicId)`, `reloadTopic(topicId)`, `reloadAll()`, `reloadPaper(topic, stem)`, `readMarkdown(paper)`                |
-| `topicOps.ts` ★      | `createTopic(displayName)`, `renameTopic(topicId, newDisplayName)`, `deleteTopic(topicId)`                                                  |
+| `topicOps.ts` ★      | `checkTopicName(displayName, existingNames, currentFolder?)`, `createTopic(ctx, displayName)`, `renameTopic(ctx, topicId, newDisplayName)`, `deleteTopic(ctx, topicId)`, `summarizeEntries(names)`. `ctx`는 `Library.ops`(`{ root, fs, writer }`) |
 | `paperOps.ts` ★      | `savePaper(topicId, meta, { paperId?, overwrite })`, `updateMeta(paper, patch)`, `movePaper(paper, targetTopicId)`, `deletePaper(paper)`, `writeSummary(paper, md)`, `deleteSummary(paper)` |
 | `paperMeta.ts`       | `parseMetaJson`, `parseMarkdownHeader`(md의 H1과 "저자 (연도)" 줄), `decodeStemUrl`(base64 파일 이름 → URL), `fallbackMeta`                 |
 | `paperSort.ts`       | `sortPapers(papers, mode)`                                                                                                                  |
@@ -610,7 +610,7 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 ### 7.2 테스트
 
 - **읽기 무변경 검증 유지**: 기존 통합 테스트(`scripts/run-integration.mjs`)는 `enableWrite=false`로 fixture를 OS 수준 읽기 전용으로 만든 뒤 돌리고, 전후 해시를 비교한다. 쓰기가 꺼져 있으면 아무것도 바뀌지 않는다는 것을 계속 검증한다.
-- **쓰기 단위 테스트**: `topicOps`, `paperOps`, `dataWriter`는 fixture를 OS 임시 디렉터리로 복사한 뒤 그 복사본에서 테스트한다. 결과 파일의 내용·서식·남은 파일 목록을 형식 명세와 비교한다.
+- **쓰기 단위 테스트**: `topicOps`, `paperOps`, `dataWriter`는 fixture를 OS 임시 디렉터리로 복사한 뒤 그 복사본에서 테스트한다. 복사와 정리는 `test/unit/tempData.ts`만 하며, ESLint는 테스트 코드 중 이 파일에서만 fs 쓰기를 허용한다. 결과 파일의 내용·서식·남은 파일 목록을 형식 명세와 비교한다.
 - **쓰기 통합 테스트**: 별도 스위트로, 임시 복사본을 데이터 폴더로 지정하고 `enableWrite=true`에서 명령을 실행한다. 원본 fixture의 해시가 바뀌지 않았는지도 확인한다.
 - **네트워크 없는 테스트**: arXiv, PDF 다운로드, Gemini, Ollama는 주입한 가짜 `fetch`로 테스트한다. 실제 API 호출은 자동 테스트에 넣지 않는다.
 
@@ -711,11 +711,11 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 | R9  | 요약 덮어쓰기와 요약 삭제는 되돌릴 수 없다(`.bak` 없음).                                     | 모달 확인. 데이터 루트가 git 저장소이면 `.md`는 git으로 되돌릴 수 있다고 README에 안내한다.                                  |
 | R10 | arXiv API 이용 제한(요청 간격 3초 권고).                                                     | 검색은 사용자 동작 단위로만 호출하고, 일괄 요약은 PDF 다운로드 사이에 간격을 둔다(§8.4).                                     |
 | R11 | 확장 표시 이름은 바뀌지만 ID(`arxivjs-viewer`)와 `.vsix` 파일 이름은 "viewer"로 남는다.      | 사용자 결정. 기존 설치와의 연결을 유지하기 위해서다. README에 함께 적는다.                                                   |
-| R12 | 토픽 이름 변경 중 열린 패널이 이전 경로를 가리킬 수 있다.                                    | 이름 변경 후 해당 토픽의 패널을 새 `Topic`으로 다시 연결하거나 닫는다(§6.6.1). P7에서 정한다.                                |
+| R12 | 토픽 이름 변경 중 열린 패널이 이전 경로를 가리킬 수 있다.                                    | (P7에서 결정) 이름을 바꾸면 그 주제의 Paper 패널은 닫고, 그 주제를 보던 Topic 패널은 새 주제로 다시 연다. 주제를 지우면 두 패널 모두 닫는다. |
 
 ## 12. 진행 현황 (2026-10-19 기준)
 
-P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6을 마쳤고 P7–P10이 남았다.
+P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6–P7을 마쳤고 P8–P10이 남았다.
 
 게시 정보는 다음과 같다.
 
@@ -733,7 +733,7 @@ P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 �
 | P4 주제 패널         | 완료 | Topic 패널(정렬, 필터, 초록), 패널 간 Reload 연동             |
 | P5 품질·배포         | 완료 | 읽기 전용 검증 통합 테스트, 성능 측정, 아이콘, `vsce package` |
 | P6 이름·규칙 정리    | 완료 | 표시 이름 변경, 형식 명세 §6 토픽 이름 규칙, fixture 경계 사례 |
-| P7 쓰기 기반·토픽    | 예정 |                                                               |
+| P7 쓰기 기반·토픽    | 완료 | `enableWrite`, `DataWriter`, ESLint 쓰기 지점 예외, 주제 추가·이름 변경·삭제 |
 | P8 논문 관리         | 예정 |                                                               |
 | P9 AI 요약           | 예정 |                                                               |
 | P10 품질·배포        | 예정 |                                                               |

@@ -16,6 +16,8 @@ export interface ArxivjsConfig {
   paperPanelLocation: PaperPanelLocation;
   /** ArxivJS 뷰를 처음 열 때 홈(주제 목록)을 연다 (기본 true) */
   openHomeOnStartup: boolean;
+  /** 데이터 폴더 쓰기 기능 (기본 false, DEV-PLAN §1.3) */
+  enableWrite: boolean;
 }
 
 export type PaperPanelLocation = 'sameGroup' | 'beside';
@@ -33,6 +35,7 @@ export function readConfig(): ArxivjsConfig {
     openInNewTab: c.get<boolean>('openInNewTab') ?? true,
     paperPanelLocation: c.get<string>('paperPanelLocation') === 'beside' ? 'beside' : 'sameGroup',
     openHomeOnStartup: c.get<boolean>('openHomeOnStartup') ?? true,
+    enableWrite: c.get<boolean>('enableWrite') === true,
   };
 }
 

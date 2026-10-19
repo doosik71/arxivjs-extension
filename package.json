@@ -109,10 +109,33 @@
           "type": "boolean",
           "default": true,
           "description": "ArxivJS 뷰를 처음 열 때 주제 목록(홈) 페이지를 함께 연다."
+        },
+        "arxivjs.enableWrite": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "데이터 폴더 **쓰기 기능**을 켠다. 켜면 주제 추가·이름 변경·삭제 같은 명령이 나타나고, 확장이 데이터 폴더의 파일을 만들거나 바꾸거나 지운다. 끄면 읽기만 한다.\n\n⚠️ arxivjs 앱과 같은 파일을 동시에 고치지 않는다. 나중에 쓴 쪽이 남는다."
         }
       }
     },
     "commands": [
+      {
+        "command": "arxivjs.createTopic",
+        "title": "주제 추가",
+        "category": "ArxivJS",
+        "icon": "$(add)"
+      },
+      {
+        "command": "arxivjs.renameTopic",
+        "title": "주제 이름 변경",
+        "category": "ArxivJS",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "arxivjs.deleteTopic",
+        "title": "주제 삭제",
+        "category": "ArxivJS",
+        "icon": "$(trash)"
+      },
       {
         "command": "arxivjs.openHome",
         "title": "주제 목록(홈) 열기",
@@ -177,24 +200,29 @@
     "menus": {
       "view/title": [
         {
-          "command": "arxivjs.openHome",
-          "when": "view == arxivjs.topics",
+          "command": "arxivjs.createTopic",
+          "when": "view == arxivjs.topics && config.arxivjs.enableWrite",
           "group": "navigation@0"
         },
         {
-          "command": "arxivjs.reload",
+          "command": "arxivjs.openHome",
           "when": "view == arxivjs.topics",
           "group": "navigation@1"
         },
         {
-          "command": "arxivjs.selectDataFolder",
+          "command": "arxivjs.reload",
           "when": "view == arxivjs.topics",
           "group": "navigation@2"
         },
         {
-          "command": "arxivjs.openSettings",
+          "command": "arxivjs.selectDataFolder",
           "when": "view == arxivjs.topics",
           "group": "navigation@3"
+        },
+        {
+          "command": "arxivjs.openSettings",
+          "when": "view == arxivjs.topics",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -212,6 +240,16 @@
           "command": "arxivjs.reloadTopic",
           "when": "view == arxivjs.topics && viewItem == arxivjs.topic",
           "group": "navigation@1"
+        },
+        {
+          "command": "arxivjs.renameTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic && config.arxivjs.enableWrite",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "arxivjs.deleteTopic",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic && config.arxivjs.enableWrite",
+          "group": "2_edit@2"
         },
         {
           "command": "arxivjs.openExternal",
@@ -235,6 +273,18 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "arxivjs.createTopic",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.renameTopic",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.deleteTopic",
+          "when": "config.arxivjs.enableWrite"
+        },
         {
           "command": "arxivjs.reloadTopic",
           "when": "false"

@@ -16,6 +16,8 @@ export interface HomeViewModel {
   folder?: string;
   rows: HomeRow[];
   notices: Notice[];
+  /** 쓰기 버튼(주제 추가)을 보인다 */
+  canWrite?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export function buildHomeHtml(vm: HomeViewModel, res: WebviewResources): string 
       <h1 class="home-title">ArxivJS 주제 목록</h1>
       <span class="count" id="summary">${escapeHtml(summary)}</span>
       <span class="spacer"></span>
+      ${vm.canWrite ? '<button type="button" data-action="createTopic" title="새 주제 폴더 만들기">+ 주제 추가</button>' : ''}
       <button type="button" data-action="selectDataFolder" title="데이터 폴더 선택">폴더 선택</button>
       <button type="button" data-action="reload" title="데이터 폴더를 다시 읽기">⟳ Reload</button>
     </div>

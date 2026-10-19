@@ -31,7 +31,7 @@ async function main(): Promise<number> {
   const results: { name: string; value: number; target: number }[] = [];
 
   // 1. 주제 목록
-  const library = new Library(root, nodeReadonlyFs, log, () => 'citation');
+  const library = new Library(root, nodeReadonlyFs, log, () => 'citation', () => false); // 읽기만 한다.
   let t = now();
   const topics = await library.topics.list();
   results.push({ name: `주제 목록 (${topics.length}개)`, value: now() - t, target: TARGETS.topicListMs });

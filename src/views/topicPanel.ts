@@ -81,6 +81,13 @@ export class TopicPanelManager implements vscode.Disposable {
     this.panel?.dispose();
   }
 
+  /** 그 주제를 보고 있으면 닫는다 (주제를 지웠을 때). */
+  closeTopic(topicId: string): void {
+    if (this.topic?.id === topicId) {
+      this.closeAll();
+    }
+  }
+
   dispose(): void {
     this.closeAll();
   }

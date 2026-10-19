@@ -9,3 +9,8 @@ export function isValidTopicName(folderName: string): boolean {
 export function toDisplayName(folderName: string): string {
   return folderName.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
 }
+
+/** 새로 만들 폴더 이름: 표시 이름을 정규화한 뒤 공백을 언더스코어로 바꾼다 (형식 명세 §6.1). */
+export function toTopicFolderName(displayName: string): string {
+  return toDisplayName(displayName).replace(/ /g, '_');
+}

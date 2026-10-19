@@ -1,14 +1,14 @@
 # ArxivJS VSCode Extension
 
-arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**으로 열람하는 확장이다.
+arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확장이다. 설정으로 쓰기 기능을 켜면 데이터 폴더를 편집할 수도 있다.
 
 - 주제(폴더) 목록을 보여준다.
 - 주제를 고르면 논문 목록과 메타 정보를 보여준다. 메타 정보는 제목, 저자, 연도, URL, 초록, 인용수, 출처다.
 - 논문을 고르면 요약 마크다운 문서를 렌더링해서 보여준다. 수식과 표도 렌더링한다.
 
-이 확장은 데이터 폴더의 파일을 **절대 수정하지 않는다.**
+기본 설정에서는 데이터 폴더의 파일을 **수정하지 않는다.** 설정 `arxivjs.enableWrite`를 켜면 주제를 추가하고, 이름을 바꾸고, 빈 주제를 지울 수 있다([주제 관리](#사용-방법) 참고). 논문 추가·편집과 AI 요약은 다음 버전에서 추가할 예정이다.
 
-데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱으로 만들고 편집한다. 논문 검색과 추가, 요약 문서 생성, 메타 정보 관리, 하이라이트가 모두 그 앱의 일이다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
+데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 지금은 논문 검색과 추가, 요약 문서 생성, 메타 정보 관리, 하이라이트를 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
 
 > 현재 버전: 0.2.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
@@ -155,6 +155,14 @@ ArxivJS (Activity Bar)
 | Topic 패널 `⟳`    | 그 주제의 논문 목록                  |
 | Paper 패널 `⟳`    | 그 논문의 메타 정보와 문서           |
 
+7. **주제 관리 (쓰기 기능)**
+   - 설정 `arxivjs.enableWrite`를 켜야 쓸 수 있다. 끄면 아래 메뉴와 버튼이 모두 사라지고, 확장은 데이터 폴더를 읽기만 한다.
+   - **주제 추가**: TOPICS 제목줄의 `+` 버튼이나 홈의 `+ 주제 추가`를 누르고 이름을 입력한다. 이름에는 영문, 숫자, 한글, 공백, 괄호, 하이픈을 쓸 수 있다. 폴더 이름은 공백을 `_`로 바꿔 만든다(`강화 학습` → `강화_학습`). 입력 칸 아래에 만들어질 폴더 이름이 보인다.
+   - **주제 이름 변경**: 주제 노드의 오른쪽 클릭 메뉴에서 고른다. 폴더 이름만 바뀌고 안의 파일 이름은 그대로다. 그 주제의 논문 탭은 닫힌다.
+   - **주제 삭제**: 주제 노드의 오른쪽 클릭 메뉴에서 고른다. 폴더가 **완전히 비어 있을 때만** 지운다. 화면에 논문이 없어도 `.txt`, `.bak` 같은 파일이 남아 있으면 지우지 않고 남은 파일을 알려 준다.
+   - 대소문자만 다른 이름이나 표시 이름이 같은 주제는 만들 수 없다.
+   - ⚠️ arxivjs 앱이 같은 폴더를 쓰고 있을 때는 같은 주제를 동시에 고치지 않는다. 잠금 기능이 없어서 나중에 쓴 쪽이 남는다.
+
 ### 설정 항목
 
 | 설정                         | 기본값      | 설명                                                                                                              |
@@ -164,6 +172,7 @@ ArxivJS (Activity Bar)
 | `arxivjs.openInNewTab`       | `true`      | `true`이면 논문마다 새 탭을 연다. `false`이면 논문 탭 하나를 재사용한다.                                          |
 | `arxivjs.paperPanelLocation` | `sameGroup` | 논문을 열 편집기 그룹. `sameGroup`은 논문 목록과 같은 그룹이라 화면을 나누지 않는다. `beside`는 목록 옆 그룹이다. |
 | `arxivjs.openHomeOnStartup`  | `true`      | ArxivJS 뷰를 처음 열 때 주제 목록(홈)을 함께 연다.                                                                |
+| `arxivjs.enableWrite`        | `false`     | 데이터 폴더 쓰기 기능을 켠다. 끄면 읽기만 한다.                                                                   |
 
 ### 명령 목록
 
@@ -178,10 +187,15 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | `ArxivJS: 논문 열기`        | 주제를 고른 뒤 논문을 검색해서 연다.         |
 | `ArxivJS: 원문 URL 열기`    | 선택한 논문의 URL을 브라우저로 연다.         |
 | `ArxivJS: 논문 정보 복사`   | 제목, 저자, 연도, URL을 클립보드에 복사한다. |
+| `ArxivJS: 주제 추가`        | 새 주제 폴더를 만든다. (쓰기 기능)           |
+| `ArxivJS: 주제 이름 변경`   | 주제 폴더 이름을 바꾼다. (쓰기 기능)         |
+| `ArxivJS: 주제 삭제`        | 빈 주제 폴더를 지운다. (쓰기 기능)           |
+
+쓰기 기능 명령은 `arxivjs.enableWrite`가 켜져 있을 때만 보인다.
 
 ### 데이터 폴더 형식
 
-데이터 폴더는 [arxivjs](https://github.com/doosik71/arxivjs) 앱이 만드는 형식을 따른다. 폴더 안의 파일을 추가하거나 고치려면 arxivjs 앱을 쓴다. 이 확장은 읽기만 한다. 예외는 `로컬 문서 열기`로 연 편집기에서 사용자가 직접 저장하는 경우뿐이다.
+데이터 폴더는 [arxivjs](https://github.com/doosik71/arxivjs) 앱이 만드는 형식을 따른다. 쓰기 기능이 꺼져 있으면 이 확장은 읽기만 한다. 예외는 `로컬 문서 열기`로 연 편집기에서 사용자가 직접 저장하는 경우뿐이다. 쓰기 기능을 켜면 확장이 arxivjs 형식 명세의 작성기 규칙에 따라 파일을 바꾼다.
 
 ```text
 <데이터 폴더>/
@@ -408,9 +422,10 @@ npx ovsx publish arxivjs-viewer-0.2.0.vsix -p <token>
 ### 개발 시 주의 사항
 
 - **실사용 데이터 폴더에 쓰지 않는다.**
-  - 실제 데이터 폴더(예: `D:\dev\javascript\arxivjsdata`)는 열람용으로만 지정한다.
+  - 실제 데이터 폴더(예: `D:\dev\javascript\arxivjsdata`)는 열람용으로만 지정한다. 그 폴더를 지정한 창에서는 `arxivjs.enableWrite`를 켜지 않는다.
+  - 쓰기 기능을 손으로 확인할 때는 fixture나 실제 데이터의 **복사본**을 쓴다.
   - 테스트, 스크립트, `markdownlint --fix` 같은 자동 수정 도구가 그 경로를 대상으로 삼으면 안 된다.
-  - 테스트는 항상 `test/fixtures/` 아래의 복사본으로 한다.
-- 데이터 폴더 접근은 `src/data/readonlyFs.ts`를 거쳐서만 한다. 이 모듈은 읽기 API만 노출한다. ESLint가 다른 곳에서 `fs`를 쓰거나 쓰기 API를 호출하면 오류를 낸다.
-- 캐시나 사용자 상태는 `context.globalState`나 `context.globalStorageUri`에 저장한다. 데이터 폴더에는 아무 파일도 만들지 않는다.
+  - 테스트는 항상 `test/fixtures/` 아래의 데이터로 한다. 쓰기 테스트는 그것을 OS 임시 폴더로 복사해서 한다(`test/unit/tempData.ts`).
+- 데이터 폴더 읽기는 `src/data/readonlyFs.ts`, 쓰기는 `src/data/dataWriter.ts`를 거쳐서만 한다. ESLint가 다른 곳에서 `fs`를 쓰거나 쓰기 API를 호출하면 오류를 낸다. `dataWriter.ts`는 호출될 때마다 `arxivjs.enableWrite`를 다시 확인하고, 데이터 폴더 밖의 경로는 거부한다.
+- 캐시나 사용자 상태는 `context.globalState`나 `context.globalStorageUri`에 저장한다. 데이터 폴더에는 형식 명세에 정의된 파일 말고는 아무것도 만들지 않는다.
 - 설계 상세는 저장소의 `DEV-PLAN.md`를 따른다.

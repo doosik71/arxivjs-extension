@@ -19,6 +19,9 @@ export interface HomePanelHost {
   openTopic(topic: Topic): void;
   selectDataFolder(): void;
   reloadAll(): void;
+  /** 데이터 폴더 쓰기가 켜져 있는가 (설정 arxivjs.enableWrite) */
+  canWrite(): boolean;
+  createTopic(): void;
 }
 
 export interface HomeMessage {
@@ -123,6 +126,9 @@ export class HomePanelManager implements vscode.Disposable {
       case 'selectDataFolder':
         this.host.selectDataFolder();
         return;
+      case 'createTopic':
+        this.host.createTopic();
+        return;
     }
   }
 
@@ -146,7 +152,7 @@ export class HomePanelManager implements vscode.Disposable {
       try {
         topics = await library.topics.list(); // 폴더 목록 한 번만 읽는다.
         if (topics.length === 0) {
-          notices.push({ kind: 'info', text: '데이터 폴더에 주제 폴더가 없습니다. 주제 폴더 이름은 영문자, 숫자, _, - 만 쓸 수 있습니다.' });
+          notices.push({ kind: 'info', text: '데이터 폴더에 주제 폴더가 없습니다. 주제 폴더 이름은 영문자, 숫자, 한글, 공백, _, (, ), - 만 쓸 수 있습니다.' });
         }
       } catch (err) {
         this.log.error(`데이터 폴더를 읽지 못함: ${library.root} — ${String(err)}`);
@@ -163,7 +169,7 @@ export class HomePanelManager implements vscode.Disposable {
     const webview = panel.webview;
     const uri = (...parts: string[]) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, ...parts)).toString();
     webview.html = buildHomeHtml(
-      { folder: library?.root, rows: topics.map((t) => ({ id: t.id, label: t.label })), notices },
+      { folder: library?.root, rows: topics.map((t) => ({ id: t.id, label: t.label })), notices, canWrite: library !== undefined && this.host.canWrite() },
       {
         cspSource: webview.cspSource,
         nonce: createNonce(),

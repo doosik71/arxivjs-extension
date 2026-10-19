@@ -143,6 +143,15 @@ export class PaperPanelManager implements vscode.Disposable {
     }
   }
 
+  /** 그 주제의 논문 패널을 닫는다 (주제 이름이 바뀌어 경로가 달라졌을 때). */
+  closeTopic(topicId: string): void {
+    for (const e of [...this.entries.values()]) {
+      if (e.topic.id === topicId) {
+        e.panel.dispose();
+      }
+    }
+  }
+
   dispose(): void {
     this.closeAll();
   }
