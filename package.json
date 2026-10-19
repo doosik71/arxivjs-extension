@@ -137,6 +137,36 @@
         "icon": "$(trash)"
       },
       {
+        "command": "arxivjs.addPaper",
+        "title": "논문 추가",
+        "category": "ArxivJS",
+        "icon": "$(add)"
+      },
+      {
+        "command": "arxivjs.editPaperMeta",
+        "title": "메타 정보 편집",
+        "category": "ArxivJS",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "arxivjs.movePaper",
+        "title": "논문을 다른 주제로 이동",
+        "category": "ArxivJS",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "arxivjs.deletePaper",
+        "title": "논문 삭제",
+        "category": "ArxivJS",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "arxivjs.deleteSummary",
+        "title": "요약 삭제",
+        "category": "ArxivJS",
+        "icon": "$(trash)"
+      },
+      {
         "command": "arxivjs.openHome",
         "title": "주제 목록(홈) 열기",
         "category": "ArxivJS",
@@ -242,6 +272,11 @@
           "group": "navigation@1"
         },
         {
+          "command": "arxivjs.addPaper",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.topic && config.arxivjs.enableWrite",
+          "group": "2_edit@0"
+        },
+        {
           "command": "arxivjs.renameTopic",
           "when": "view == arxivjs.topics && viewItem == arxivjs.topic && config.arxivjs.enableWrite",
           "group": "2_edit@1"
@@ -270,6 +305,26 @@
           "command": "arxivjs.copyCitationInfo",
           "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/",
           "group": "navigation@3"
+        },
+        {
+          "command": "arxivjs.editPaperMeta",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/ && config.arxivjs.enableWrite",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "arxivjs.movePaper",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/ && config.arxivjs.enableWrite",
+          "group": "2_edit@2"
+        },
+        {
+          "command": "arxivjs.deleteSummary",
+          "when": "view == arxivjs.topics && viewItem == arxivjs.paper && config.arxivjs.enableWrite",
+          "group": "2_edit@3"
+        },
+        {
+          "command": "arxivjs.deletePaper",
+          "when": "view == arxivjs.topics && viewItem =~ /^arxivjs.paper/ && config.arxivjs.enableWrite",
+          "group": "2_edit@4"
         }
       ],
       "commandPalette": [
@@ -283,6 +338,26 @@
         },
         {
           "command": "arxivjs.deleteTopic",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.addPaper",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.editPaperMeta",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.movePaper",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.deletePaper",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
+          "command": "arxivjs.deleteSummary",
           "when": "config.arxivjs.enableWrite"
         },
         {

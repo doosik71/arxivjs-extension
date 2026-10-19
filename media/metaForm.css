@@ -1,0 +1,39 @@
+/* 메타 정보 입력 폼 */
+body { max-width: 760px; padding-top: 16px; }
+
+.form-title { font-size: 1.4em; margin: 8px 0 2px; }
+.form-subtitle { margin: 0 0 12px; color: var(--vscode-descriptionForeground); word-break: break-all; }
+
+.field { margin: 12px 0; }
+.field label { display: block; font-weight: 600; margin-bottom: 4px; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; }
+.row .field { flex: 1 1 160px; }
+
+input[type='text'],
+select,
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--border));
+  border-radius: 2px;
+}
+textarea { resize: vertical; line-height: 1.5; }
+input:focus,
+select:focus,
+textarea:focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+[aria-invalid='true'] { border-color: var(--vscode-inputValidation-errorBorder, #f14c4c); }
+
+.hint { margin: 2px 0 0; font-size: 0.9em; color: var(--vscode-descriptionForeground); }
+.error { margin: 2px 0 0; font-size: 0.9em; color: var(--vscode-errorForeground); }
+
+.actions { margin-top: 20px; }
+button.primary {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+button.primary:hover { background: var(--vscode-button-hoverBackground); }
+button:disabled { opacity: 0.6; cursor: default; }

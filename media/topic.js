@@ -154,8 +154,8 @@
       return;
     }
     const action = target.getAttribute('data-action');
-    if (action === 'reload') {
-      vscode.postMessage({ type: 'reload' });
+    if (action === 'reload' || action === 'addPaper') {
+      vscode.postMessage({ type: action });
       return;
     }
     const tr = target.closest('tr.paper');

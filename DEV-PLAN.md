@@ -335,7 +335,7 @@ UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"�
 | 앵커/목차    | `markdown-it-anchor`                                | H2 목차와 이모지 헤더 slug                                                         |
 | HTTP         | 전역 `fetch`                                        | arXiv API, PDF 다운로드, Gemini/Ollama REST. 추가 의존성 없음.                     |
 | LLM          | Gemini REST(`streamGenerateContent`), Ollama REST(`/api/generate`) | SDK 없이 REST를 직접 호출한다. 의존성을 늘리지 않고, 테스트에서 `fetch`를 주입하기 쉽다. |
-| arXiv 응답   | Atom XML 파서 (후보: `fast-xml-parser`)             | P8에서 확정한다. 필요한 필드가 적으므로 의존성 크기를 보고 고른다.                 |
+| arXiv 응답   | 직접 작성한 작은 Atom 파서 (`src/sources/arxiv.ts`) | (P8에서 결정) 필요한 필드가 `<entry>`의 id, title, summary, published, author/name뿐이다. 후보였던 `fast-xml-parser` 5.x는 하위 의존성 6개, 1.3MB라 쓰지 않았다. 실제 arXiv 응답으로 확인했다. |
 | PDF 텍스트   | 후보: `pdf-parse`(arxivjs와 같음) 또는 `pdfjs-dist` | P9에서 확정한다. esbuild 번들, `.vsix` 크기, 라이선스를 확인한다(§11 R8).          |
 | 테스트       | `vitest`(순수 로직) + `@vscode/test-electron`(통합) |                                                                                    |
 | 린트         | ESLint + `no-restricted-syntax` 규칙                | 쓰기 API를 `dataWriter.ts` 밖에서 쓰지 못하게 막는다(§7).                          |
@@ -371,6 +371,7 @@ arxivjs-extension/
 │   │   ├── paperSort.ts         # 정렬 (citation / year / title)
 │   │   ├── topicOps.ts          # ★ 토픽 생성·이름 변경·삭제 (형식 명세 §6.3)
 │   │   ├── paperOps.ts          # ★ 논문 저장·메타 수정·이동·삭제·요약 삭제 (형식 명세 §9)
+│   │   ├── metaForm.ts          # ★ 메타 정보 입력 폼 값 검사, 바꾼 필드만 고르는 patch
 │   │   ├── paperId.ts           # ★ slugifyPaperTitle, 제목·저자 정리
 │   │   ├── errors.ts            # DataError (notFound / notDirectory / io / ★ conflict / writeDisabled)
 │   │   └── models.ts            # Topic, Paper, PaperMeta 타입
@@ -389,7 +390,8 @@ arxivjs-extension/
 │   │   ├── metaEditPanel.ts     # ★ 메타 정보 편집 폼 (추가의 "직접 입력"과 같이 씀)
 │   │   └── format.ts            # 표시 문자열 (vscode 비의존)
 │   ├── commands/
-│   │   └── writeCommands.ts     # ★ 쓰기 명령 등록, 입력 UI, 확인 대화상자, 쓰기 후 reload
+│   │   ├── writeCommands.ts     # ★ 쓰기 명령 등록(주제), 공용 도우미, 확인 대화상자, 쓰기 후 reload
+│   │   └── paperCommands.ts     # ★ 논문 쓰기 명령 (추가, 메타 편집, 이동, 삭제, 요약 삭제)
 │   ├── render/
 │   │   ├── markdown.ts          # markdown-it + katex, 제목 id·목차, 렌더 캐시
 │   │   ├── html.ts              # Paper 템플릿, CSP, nonce, 이스케이프 유틸
@@ -450,7 +452,9 @@ interface Paper {
 | `topicRepository.ts` | `list()`, `get(id)`, `reload()`                                                                                                             |
 | `paperRepository.ts` | `list(topic)`, `isLoaded(topicId)`, `reloadTopic(topicId)`, `reloadAll()`, `reloadPaper(topic, stem)`, `readMarkdown(paper)`                |
 | `topicOps.ts` ★      | `checkTopicName(displayName, existingNames, currentFolder?)`, `createTopic(ctx, displayName)`, `renameTopic(ctx, topicId, newDisplayName)`, `deleteTopic(ctx, topicId)`, `summarizeEntries(names)`. `ctx`는 `Library.ops`(`{ root, fs, writer }`) |
-| `paperOps.ts` ★      | `savePaper(topicId, meta, { paperId?, overwrite })`, `updateMeta(paper, patch)`, `movePaper(paper, targetTopicId)`, `deletePaper(paper)`, `writeSummary(paper, md)`, `deleteSummary(paper)` |
+| `paperOps.ts` ★      | `savePaper(ctx, topic, paper, { paperId?, overwrite? })`, `paperExists(ctx, topic, paperId)`, `readPaperMeta(ctx, paper)`, `updateMeta(ctx, paper, patch)`, `movePaper(ctx, paper, from, to)` → `moved \| replaced \| keptTarget`, `deletePaper(ctx, paper, topic)`, `deleteSummary(ctx, paper, topic)`, `resolvePaperId(title, requested?)`. `writeSummary`는 P9에서 더한다. |
+| `metaForm.ts` ★      | `parseMetaForm(values, mode)`, `toFormValues(meta)`, `toMetaPatch(initial, submitted, paper)` — 편집할 때는 사용자가 바꾼 필드만 저장해서 불필요한 diff를 만들지 않는다. |
+| `sources/arxiv.ts` ★ | `parseArxivId(input)`, `searchArxiv(keywords, { fetch, maxResults?, signal? })`, `fetchArxivById(id, { fetch, signal? })`, `parseArxivFeed(xml)` |
 | `paperMeta.ts`       | `parseMetaJson`, `parseMarkdownHeader`(md의 H1과 "저자 (연도)" 줄), `decodeStemUrl`(base64 파일 이름 → URL), `fallbackMeta`                 |
 | `paperSort.ts`       | `sortPapers(papers, mode)`                                                                                                                  |
 
@@ -518,7 +522,7 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 ### 6.4 Paper 패널 렌더링
 
 - 메타 헤더에는 제목, 저자, 연도, 인용수, source 배지, 원문 링크 버튼, 주제 이동 링크, Reload 버튼을 표시한다.
-- 쓰기가 켜져 있으면 `요약 생성`(요약이 있으면 `요약 다시 생성`), `메타 편집`, `요약 삭제` 버튼을 더한다.
+- 쓰기가 켜져 있으면 `요약 생성`(요약이 있으면 `요약 다시 생성`, P9), `메타 편집`, `요약 삭제` 버튼을 더한다. `.json`이 없거나 깨진 논문에는 `메타 편집`을 보이지 않는다.
 - 패널 버튼은 nonce가 붙은 최소 스크립트에서 `postMessage`로 확장에 요청한다. 확장은 메시지를 받으면 `enableWrite`를 다시 검사한다.
 - md 본문은 `markdown-it`(`html:false`)과 KaTeX로 렌더링한다. 수식 렌더링 오류는 해당 수식만 원문으로 보여준다(`throwOnError:false`).
 - 목차는 H2를 기준으로 만들고, 왼쪽 또는 상단에 접을 수 있게 둔다.
@@ -551,13 +555,13 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 #### 6.6.2 논문 추가
 
 1. 메타 정보를 얻는다.
-   - **arXiv 검색**: 검색어를 받아 `export.arxiv.org/api/query?search_query=all:<검색어>`를 부르고, 결과를 QuickPick(제목, 저자, 연도)으로 보여준다. 여러 개를 고를 수 있다.
+   - **arXiv 검색**: 검색어의 낱말마다 `all:`을 붙여 AND로 이은 `search_query`로 `export.arxiv.org/api/query`를 부른다(관련도순, 최대 50편). 결과를 QuickPick(제목, 연도·arXiv ID, 저자)으로 보여주고, 이 주제에 이미 있는 논문은 "이미 있음"으로 표시한다. 여러 개를 고를 수 있다. 조회는 진행률 알림에서 취소할 수 있다.
    - **arXiv URL·ID**: `2310.16485`, `arxiv.org/abs/...`, `arxiv.org/pdf/...` 형식을 받아 `id_list`로 조회한다.
    - **직접 입력**: 메타 편집 폼을 빈 상태로 연다. `source`는 `pdf`(PDF URL이 있을 때) 또는 `manual`로 고른다.
    - arXiv에서 얻은 논문은 `source: "arxiv"`, `url`은 abs URL이다. `citation`은 넣지 않는다("모름").
 2. `title`, `authors` 공백을 정리하고 `year`를 정수로 만든다.
 3. paperId = `slugifyPaperTitle(title)`. 결과가 빈 문자열이면(영문·숫자가 없는 제목) 사용자에게 slug 형식의 paperId를 받는다(`slugify(id) === id`, 비어 있지 않음).
-4. 같은 토픽에 같은 paperId의 `.json`이 이미 있으면 덮어쓸지 묻는다. 기본은 건너뛰기다.
+4. 같은 토픽에 같은 paperId의 `.json`이 이미 있으면 덮어쓸지 묻는다. 여러 편이면 한 번에 묻고, 기본은 건너뛰기다. 직접 입력은 덮어쓰지 않고 기존 논문의 메타 편집을 안내한다.
 5. `<topic>/<paperId>.json`을 원자적으로 쓴다.
 
 #### 6.6.3 메타 정보 편집
@@ -715,7 +719,7 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 
 ## 12. 진행 현황 (2026-10-19 기준)
 
-P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6–P7을 마쳤고 P8–P10이 남았다.
+P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 위치 설정, 긴 저자 목록 생략, "로컬 문서 열기"를 더했다. 0.3.0은 P6–P8을 마쳤고 P9–P10이 남았다.
 
 게시 정보는 다음과 같다.
 
@@ -734,7 +738,7 @@ P0–P5를 모두 마쳤다(0.2.0). 0.2.0에서 홈(주제 목록), 논문 탭 �
 | P5 품질·배포         | 완료 | 읽기 전용 검증 통합 테스트, 성능 측정, 아이콘, `vsce package` |
 | P6 이름·규칙 정리    | 완료 | 표시 이름 변경, 형식 명세 §6 토픽 이름 규칙, fixture 경계 사례 |
 | P7 쓰기 기반·토픽    | 완료 | `enableWrite`, `DataWriter`, ESLint 쓰기 지점 예외, 주제 추가·이름 변경·삭제 |
-| P8 논문 관리         | 예정 |                                                               |
+| P8 논문 관리         | 완료 | arXiv 검색·ID 조회, 직접 입력, 메타 편집 폼, 이동·삭제·요약 삭제 |
 | P9 AI 요약           | 예정 |                                                               |
 | P10 품질·배포        | 예정 |                                                               |
 

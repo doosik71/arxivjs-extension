@@ -16,6 +16,9 @@ export interface TopicPanelHost {
   openPaper(topic: Topic, paper: Paper): void;
   /** 이 주제의 캐시를 비우고 트리도 다시 그린다. 이후 패널이 다시 읽는다. */
   reloadTopic(topicId: string): void;
+  /** 데이터 폴더 쓰기가 켜져 있는가 (설정 arxivjs.enableWrite) */
+  canWrite(): boolean;
+  addPaper(topic: Topic): void;
 }
 
 export interface TopicMessage {
@@ -125,6 +128,10 @@ export class TopicPanelManager implements vscode.Disposable {
       this.host.reloadTopic(topic.id); // 캐시를 비우고 트리·패널을 다시 그리게 한다.
       return;
     }
+    if (msg.type === 'addPaper') {
+      this.host.addPaper(topic);
+      return;
+    }
     const paper = msg.id ? this.papers.get(msg.id) : undefined;
     if (!paper) {
       return;
@@ -175,7 +182,14 @@ export class TopicPanelManager implements vscode.Disposable {
     const uri = (...parts: string[]) => webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, ...parts)).toString();
     panel.title = topic.label;
     webview.html = buildTopicHtml(
-      { topicId: topic.id, topicLabel: topic.label, rows: papers.map(toTopicRow), defaultSort: this.host.defaultSort(), notices },
+      {
+        topicId: topic.id,
+        topicLabel: topic.label,
+        rows: papers.map(toTopicRow),
+        defaultSort: this.host.defaultSort(),
+        notices,
+        canWrite: library !== undefined && this.host.canWrite(),
+      },
       {
         cspSource: webview.cspSource,
         nonce: createNonce(),

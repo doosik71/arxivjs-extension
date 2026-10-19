@@ -120,3 +120,18 @@ describe('buildPaperHtml', () => {
     expect(html).toContain('<p class="meta"></p>');
   });
 });
+
+describe('buildPaperHtml: 쓰기 버튼', () => {
+  it('writeActions가 없으면 쓰기 버튼이 없다', () => {
+    const html = buildPaperHtml(vm(), res);
+    expect(html).not.toContain('data-action="editMeta"');
+    expect(html).not.toContain('data-action="deleteSummary"');
+  });
+
+  it('writeActions에 따라 메타 편집·요약 삭제 버튼을 보인다', () => {
+    expect(buildPaperHtml(vm({ writeActions: { editMeta: true, deleteSummary: true } }), res)).toMatch(/data-action="editMeta"[\s\S]*data-action="deleteSummary"/);
+    const noSummary = buildPaperHtml(vm({ writeActions: { editMeta: true, deleteSummary: false } }), res);
+    expect(noSummary).toContain('data-action="editMeta"');
+    expect(noSummary).not.toContain('data-action="deleteSummary"');
+  });
+});

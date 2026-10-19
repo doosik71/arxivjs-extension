@@ -8,6 +8,7 @@ import { nodeReadonlyFs } from './data/readonlyFs';
 import { createLogger } from './util/log';
 import { citationText, paperDescription } from './views/format';
 import { HomePanelManager } from './views/homePanel';
+import { MetaEditPanelManager } from './views/metaEditPanel';
 import { openExternalUrl, PaperPanelManager } from './views/paperPanel';
 import { TopicPanelManager } from './views/topicPanel';
 import { TOPICS_VIEW_ID, TopicTreeProvider, type TreeNode } from './views/topicTreeProvider';
@@ -25,6 +26,9 @@ interface PaperTarget {
   topic: Topic;
   paper: Paper;
 }
+
+const isPaperTarget = (arg: unknown): arg is PaperTarget =>
+  typeof arg === 'object' && arg !== null && !('kind' in arg) && 'topic' in arg && 'paper' in arg;
 
 export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   const log = createLogger();
@@ -67,6 +71,8 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         void topicPanel.refresh(topicId);
         void home.refresh();
       },
+      canWrite: () => config.enableWrite,
+      runPaperCommand: (command, topic, paper) => void vscode.commands.executeCommand(command, { topic, paper }),
     },
     log,
   );
@@ -97,9 +103,13 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       defaultSort: () => config.paperSort,
       openPaper: (topic, paper) => void panels.show(topic, paper, paperPlacement(topicPanel.viewColumn)),
       reloadTopic,
+      canWrite: () => config.enableWrite,
+      addPaper: (topic) => void vscode.commands.executeCommand('arxivjs.addPaper', { kind: 'topic', topic }),
     },
     log,
   );
+
+  const metaEditor = new MetaEditPanelManager(context.extensionUri, log);
 
   const home = new HomePanelManager(
     context.extensionUri,
@@ -124,10 +134,13 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     }
   };
 
-  /** 명령 대상 논문: 인자로 받은 트리 노드 → 활성 Paper 패널 → 트리에서 선택한 논문 */
-  const resolvePaper = (node?: TreeNode): PaperTarget | undefined => {
+  /** 명령 대상 논문: 인자(트리 노드, Paper 패널이 넘긴 대상) → 활성 Paper 패널 → 트리에서 선택한 논문 */
+  const resolvePaper = (arg?: unknown): PaperTarget | undefined => {
+    if (isPaperTarget(arg)) {
+      return arg;
+    }
     const pick = (n?: TreeNode) => (n?.kind === 'paper' ? { topic: n.parent.topic, paper: n.paper } : undefined);
-    return pick(node) ?? panels.activePaper ?? pick(treeView.selection[0]);
+    return pick(arg as TreeNode | undefined) ?? panels.activePaper ?? pick(treeView.selection[0]);
   };
 
   /** 주제 QuickPick */
@@ -166,6 +179,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     panels,
     topicPanel,
     home,
+    metaEditor,
 
     treeView.onDidChangeVisibility((e) => {
       if (e.visible) {
@@ -254,6 +268,21 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
           topicPanel.closeTopic(topicId);
         },
         revealTopic,
+        resolvePaper,
+        reloadTopic,
+        reloadPaper: async ({ topic, paper }) => {
+          reloadTopic(topic.id);
+          await panels.reloadById(paper.id);
+        },
+        closePaper: (paperId) => panels.closePaper(paperId),
+        openPaper: async (topic, stem) => {
+          const paper = (await library?.papers.list(topic))?.find((p) => p.stem === stem);
+          if (paper) {
+            await panels.show(topic, paper, paperPlacement(topicPanel.viewColumn));
+          }
+        },
+        metaEditor,
+        fetch: (url, init) => fetch(url, init),
       },
       log,
     ),
@@ -270,6 +299,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       config = readConfig();
       if (config.dataFolder !== previous.dataFolder || config.dataFolderRaw !== previous.dataFolderRaw) {
         panels.closeAll(); // 다른 데이터 폴더의 내용을 계속 보여주지 않는다.
+        metaEditor.closeAll();
         topicPanel.closeAll();
         createLibrary();
         updateViewDescription();
@@ -281,6 +311,11 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       if (config.enableWrite !== previous.enableWrite) {
         log.info(`데이터 폴더 쓰기: ${config.enableWrite ? '켜짐' : '꺼짐'}`);
         void home.refresh(); // 쓰기 버튼을 보이거나 숨긴다.
+        void topicPanel.refresh();
+        void panels.rerenderAll();
+        if (!config.enableWrite) {
+          metaEditor.closeAll();
+        }
       }
     }),
   );

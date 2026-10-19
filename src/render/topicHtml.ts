@@ -25,6 +25,8 @@ export interface TopicViewModel {
   rows: TopicRow[];
   defaultSort: PaperSort;
   notices: Notice[];
+  /** 쓰기 버튼(논문 추가)을 보인다 */
+  canWrite?: boolean;
 }
 
 export function toTopicRow(paper: Paper): TopicRow {
@@ -76,6 +78,7 @@ export function buildTopicHtml(vm: TopicViewModel, res: WebviewResources): strin
       <h1 class="topic-title">${escapeHtml(vm.topicLabel)}</h1>
       <span class="count" id="count" aria-live="polite">${vm.rows.length}편</span>
       <span class="spacer"></span>
+      ${vm.canWrite ? '<button type="button" data-action="addPaper" title="이 주제에 논문 추가">+ 논문 추가</button>' : ''}
       <button type="button" data-action="reload" title="이 주제의 논문 목록을 다시 읽기">⟳ Reload</button>
     </div>
     <div class="toolbar filters">

@@ -36,6 +36,8 @@ export interface PaperViewModel {
   localDocument?: string;
   headings: Heading[];
   notices: Notice[];
+  /** 쓰기 버튼 (설정 arxivjs.enableWrite가 켜져 있을 때만) */
+  writeActions?: { editMeta: boolean; deleteSummary: boolean };
 }
 
 export interface WebviewResources {
@@ -120,6 +122,10 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
   const localButton = vm.localDocument
     ? `<button type="button" data-action="openLocal" title="${escapeHtml(vm.localDocument)}">로컬 문서 열기</button>`
     : '';
+  const writeButtons = [
+    vm.writeActions?.editMeta ? '<button type="button" data-action="editMeta" title="메타 정보(.json) 편집">메타 편집</button>' : '',
+    vm.writeActions?.deleteSummary ? '<button type="button" data-action="deleteSummary" title="요약 문서(.md)와 하이라이트 삭제">요약 삭제</button>' : '',
+  ].join('');
   const abstract = vm.abstractHtml
     ? `<section class="abstract"><details${vm.bodyHtml ? '' : ' open'}><summary>초록 (Abstract)</summary><div class="abstract-body">${vm.abstractHtml}</div></details></section>`
     : '';
@@ -142,6 +148,7 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
       ${openButton}
       ${localButton}
       <button type="button" data-action="copyInfo" title="제목, 저자, 연도, URL 복사">정보 복사</button>
+      ${writeButtons}
       <button type="button" data-action="reload" title="이 논문을 다시 읽기">⟳ Reload</button>
     </div>
     <h1 class="paper-title">${escapeHtml(vm.title)}</h1>

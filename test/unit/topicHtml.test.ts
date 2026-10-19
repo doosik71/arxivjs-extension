@@ -79,6 +79,11 @@ describe('buildTopicHtml', () => {
     expect(data.rows).toEqual([expect.objectContaining({ title: 'A </script> title' })]);
   });
 
+  it('논문 추가 버튼은 canWrite일 때만 있다', () => {
+    expect(buildTopicHtml(vm(), res)).not.toContain('data-action="addPaper"');
+    expect(buildTopicHtml(vm({ canWrite: true }), res)).toContain('data-action="addPaper"');
+  });
+
   it('주제 이름은 이스케이프하고, 논문 수를 표시한다', () => {
     const html = buildTopicHtml(vm(), res);
     expect(html).toContain('<h1 class="topic-title">Few-Shot &lt;Learning&gt;</h1>');

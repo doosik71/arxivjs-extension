@@ -5,7 +5,7 @@ import type { DataWriter } from './dataWriter';
 import { DataError } from './errors';
 import type { ReadonlyFileSystem } from './readonlyFs';
 
-export interface TopicOpsContext {
+export interface DataOpsContext {
   /** 데이터 폴더 절대 경로 */
   root: string;
   fs: ReadonlyFileSystem;
@@ -13,7 +13,7 @@ export interface TopicOpsContext {
 }
 
 /** 데이터 폴더 바로 아래의 모든 이름 (폴더, 파일, dot 항목 포함). 이름 중복 검사에 쓴다. */
-export async function listRootNames(ctx: TopicOpsContext): Promise<string[]> {
+export async function listRootNames(ctx: DataOpsContext): Promise<string[]> {
   return (await ctx.fs.readDir(ctx.root)).map((e) => e.name);
 }
 
@@ -42,7 +42,7 @@ export function checkTopicName(displayName: string, existingNames: readonly stri
   return clash === undefined ? undefined : `같은 이름의 주제가 이미 있습니다: ${clash}`;
 }
 
-async function validated(ctx: TopicOpsContext, displayName: string, currentFolder?: string): Promise<string> {
+async function validated(ctx: DataOpsContext, displayName: string, currentFolder?: string): Promise<string> {
   const reason = checkTopicName(displayName, await listRootNames(ctx), currentFolder);
   const folder = toTopicFolderName(displayName);
   if (reason) {
@@ -52,14 +52,14 @@ async function validated(ctx: TopicOpsContext, displayName: string, currentFolde
 }
 
 /** 주제 폴더를 만들고 폴더 이름을 돌려준다. */
-export async function createTopic(ctx: TopicOpsContext, displayName: string): Promise<string> {
+export async function createTopic(ctx: DataOpsContext, displayName: string): Promise<string> {
   const folder = await validated(ctx, displayName);
   await ctx.writer.makeDirectory(path.join(ctx.root, folder));
   return folder;
 }
 
 /** 주제 폴더 이름을 바꾸고 새 폴더 이름을 돌려준다. 폴더 안의 파일 이름은 그대로다. */
-export async function renameTopic(ctx: TopicOpsContext, topicId: string, newDisplayName: string): Promise<string> {
+export async function renameTopic(ctx: DataOpsContext, topicId: string, newDisplayName: string): Promise<string> {
   const folder = await validated(ctx, newDisplayName, topicId);
   await ctx.writer.move(path.join(ctx.root, topicId), path.join(ctx.root, folder));
   return folder;
@@ -76,7 +76,7 @@ export function summarizeEntries(names: readonly string[]): string {
 }
 
 /** 주제 폴더가 완전히 비어 있을 때만 지운다. 비어 있지 않으면 conflict (메시지에 남은 항목 요약). */
-export async function deleteTopic(ctx: TopicOpsContext, topicId: string): Promise<void> {
+export async function deleteTopic(ctx: DataOpsContext, topicId: string): Promise<void> {
   const dir = path.join(ctx.root, topicId);
   const names = (await ctx.fs.readDir(dir)).map((e) => e.name);
   if (names.length > 0) {

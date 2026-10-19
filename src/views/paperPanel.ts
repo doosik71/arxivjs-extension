@@ -50,6 +50,10 @@ export interface PaperPanelHost {
   revealTopic(topicId: string): void;
   /** 논문을 다시 읽은 뒤 트리의 해당 주제를 다시 그린다. */
   onPaperReloaded(topicId: string): void;
+  /** 데이터 폴더 쓰기가 켜져 있는가 (설정 arxivjs.enableWrite) */
+  canWrite(): boolean;
+  /** 쓰기 명령(arxivjs.editPaperMeta 등)을 이 논문에 대해 실행한다. */
+  runPaperCommand(command: string, topic: Topic, paper: Paper): void;
 }
 
 /** Paper 패널 (DEV-PLAN §3.2, §6.4). 기본은 패널 하나를 재사용하고, openInNewTab이면 논문마다 연다. */
@@ -143,6 +147,29 @@ export class PaperPanelManager implements vscode.Disposable {
     }
   }
 
+  /** 그 논문의 패널을 다시 읽어 그린다 (메타 정보 수정, 요약 삭제 후). */
+  async reloadById(paperId: string): Promise<void> {
+    for (const e of [...this.entries.values()]) {
+      if (e.paper.id === paperId) {
+        await this.reload(e);
+      }
+    }
+  }
+
+  /** 그 논문의 패널을 닫는다 (이동, 삭제 후). */
+  closePaper(paperId: string): void {
+    for (const e of [...this.entries.values()]) {
+      if (e.paper.id === paperId) {
+        e.panel.dispose();
+      }
+    }
+  }
+
+  /** 열린 패널을 모두 다시 그린다. 데이터는 다시 읽지 않는다 (쓰기 설정이 바뀌었을 때). */
+  async rerenderAll(): Promise<void> {
+    await Promise.all([...this.entries.values()].map((e) => this.render(e)));
+  }
+
   /** 그 주제의 논문 패널을 닫는다 (주제 이름이 바뀌어 경로가 달라졌을 때). */
   closeTopic(topicId: string): void {
     for (const e of [...this.entries.values()]) {
@@ -226,6 +253,12 @@ export class PaperPanelManager implements vscode.Disposable {
           await openExternalUrl(msg.href, this.log);
         }
         return;
+      case 'editMeta':
+        this.host.runPaperCommand('arxivjs.editPaperMeta', entry.topic, entry.paper);
+        return;
+      case 'deleteSummary':
+        this.host.runPaperCommand('arxivjs.deleteSummary', entry.topic, entry.paper);
+        return;
     }
   }
 
@@ -277,6 +310,9 @@ export class PaperPanelManager implements vscode.Disposable {
         localDocument: bodyHtml !== undefined ? paper.mdPath : undefined,
         headings,
         notices,
+        writeActions: this.host.canWrite()
+          ? { editMeta: paper.jsonPath !== undefined && !paper.metaError, deleteSummary: paper.jsonPath !== undefined && paper.mdPath !== undefined }
+          : undefined,
       },
       {
         cspSource: webview.cspSource,

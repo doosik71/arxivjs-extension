@@ -9,7 +9,7 @@ import {
   deleteTopic,
   renameTopic,
   summarizeEntries,
-  type TopicOpsContext,
+  type DataOpsContext,
 } from '../../src/data/topicOps';
 import { toTopicFolderName } from '../../src/util/displayName';
 import { copyFixture, type TempData } from './tempData';
@@ -57,7 +57,7 @@ describe('summarizeEntries', () => {
 
 describe('topicOps (임시 복사본)', () => {
   let data: TempData;
-  let ctx: TopicOpsContext;
+  let ctx: DataOpsContext;
   const at = (...parts: string[]) => path.join(data.root, ...parts);
 
   beforeEach(() => {
@@ -107,7 +107,7 @@ describe('topicOps (임시 복사본)', () => {
   });
 
   it('쓰기가 꺼져 있으면 writeDisabled', async () => {
-    const off: TopicOpsContext = { ...ctx, writer: createDataWriter({ root: data.root, isEnabled: () => false }) };
+    const off: DataOpsContext = { ...ctx, writer: createDataWriter({ root: data.root, isEnabled: () => false }) };
     await expect(createTopic(off, 'New Topic')).rejects.toMatchObject({ kind: 'writeDisabled' });
     expect(existsSync(at('New_Topic'))).toBe(false);
   });

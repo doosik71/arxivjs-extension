@@ -1,6 +1,6 @@
 // 쓰기 테스트용: fixture(sample-data)를 OS 임시 폴더로 복사한다 (DEV-PLAN §7.2).
 // 원본 fixture와 실사용 데이터 폴더에는 절대 쓰지 않는다.
-import { chmodSync, cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { chmodSync, cpSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -21,6 +21,19 @@ export function copyFixture(): TempData {
     root,
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
   };
+}
+
+/** 임시 복사본 안에 파일을 만든다. mtime을 주면 수정 시각도 맞춘다. root 밖에는 쓰지 않는다. */
+export function putFile(data: TempData, rel: string, content: string, mtime?: Date): string {
+  const full = path.join(data.root, rel);
+  if (path.relative(data.root, full).startsWith('..')) {
+    throw new Error(`임시 복사본 밖의 경로: ${rel}`);
+  }
+  writeFileSync(full, content, 'utf8');
+  if (mtime) {
+    utimesSync(full, mtime, mtime);
+  }
+  return full;
 }
 
 function makeWritable(dir: string): void {
