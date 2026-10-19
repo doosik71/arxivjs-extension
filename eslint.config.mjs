@@ -90,7 +90,7 @@ export default tseslint.config(
   },
   {
     // 쓰기 테스트용 임시 복사본을 만들고 지우는 도우미. 임시 폴더(os.tmpdir) 밖에는 쓰지 않는다.
-    files: ['test/unit/tempData.ts'],
+    files: ['test/unit/tempData.ts', 'test/integration/tempData.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...banNames(VSCODE_EDIT_APIS)],
     },

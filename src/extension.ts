@@ -22,6 +22,7 @@ export interface ArxivjsApi {
   readonly panels: PaperPanelManager;
   readonly topicPanel: TopicPanelManager;
   readonly home: HomePanelManager;
+  readonly metaEditor: MetaEditPanelManager;
   getLibrary(): Library | undefined;
 }
 
@@ -338,7 +339,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   }
 
   log.info('ArxivJS activated');
-  return { tree, panels, topicPanel, home, getLibrary: () => library };
+  return { tree, panels, topicPanel, home, metaEditor, getLibrary: () => library };
 }
 
 export function deactivate(): void {}

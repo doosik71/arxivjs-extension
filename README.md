@@ -10,7 +10,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 
 데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 쓰기 기능은 arxivjs 앱 없이 동작한다. 하이라이트 편집은 지금도 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
 
-> 현재 버전: 0.2.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
+> 현재 버전: 0.3.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
 ## 목차
 
@@ -27,6 +27,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
     - [설정 항목](#설정-항목)
     - [명령 목록](#명령-목록)
     - [데이터 폴더 형식](#데이터-폴더-형식)
+    - [쓰기 기능과 데이터 보호](#쓰기-기능과-데이터-보호)
     - [문제 해결](#문제-해결)
   - [개발자 가이드](#개발자-가이드)
     - [개발 환경 준비](#개발-환경-준비)
@@ -73,7 +74,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 명령줄에서 설치할 수도 있다.
 
 ```bash
-code --install-extension arxivjs-viewer-0.1.0.vsix
+code --install-extension arxivjs-viewer-0.3.0.vsix
 ```
 
 #### 방법 3. 제거
@@ -269,6 +270,19 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | `citation` |      | 인용수. 없으면 정렬할 때 맨 뒤로 간다. |
 | `source`   |      | 출처: `arxiv`, `pdf`, `manual`         |
 
+### 쓰기 기능과 데이터 보호
+
+쓰기 기능(`arxivjs.enableWrite`)은 기본으로 꺼져 있다. 켜기 전에 다음을 알아 둔다.
+
+- **확장이 바꾸는 파일**: 주제 폴더, 논문의 `.json`, `.md`, `.txt`, 그리고 이동·삭제할 때의 `.hlt`, `.bak`이다. arxivjs 형식 명세의 작성기 규칙을 따른다. 파일은 임시 파일(`.<이름>.tmp`)에 쓴 뒤 바꿔치기하므로, 쓰는 도중의 파일이 다른 앱에 보이지 않는다.
+- **동시 편집**: 데이터 폴더에는 잠금이 없다. arxivjs 앱이나 다른 VS Code 창이 같은 논문을 동시에 고치면 나중에 쓴 쪽이 남는다. 같은 논문을 두 곳에서 동시에 고치지 않는다.
+- **되돌릴 수 없는 작업**: 논문 삭제, 요약 삭제, 요약 다시 생성은 백업을 남기지 않는다. 그래서 확인 대화상자를 거친다. 데이터 폴더를 git 저장소로 관리하면 `.json`과 `.md`는 git으로 되살릴 수 있다. 기본 `.gitignore`가 `.txt`, `.hlt`, `.bak`은 추적하지 않는다는 점에 주의한다.
+- **AI 요약과 개인정보**: 요약할 때는 논문 전문과 `userprompt.txt`를 고른 엔진에 보낸다. Gemini를 쓰면 Google 서버로 전송된다. 외부로 보내면 안 되는 문서는 로컬 Ollama로 요약한다. Gemini API 키는 OS 자격 증명 저장소(SecretStorage)에만 저장하고, 로그나 설정 파일에는 남기지 않는다.
+- **arxivjs 앱과 다른 점**
+  - 요약을 다시 만들거나 지울 때 `.bak` 백업을 만들지 않는다. arxivjs 앱은 요약 삭제 시 `.md`를 `.bak`으로 옮긴다.
+  - `.json` 없이 `.md`만 있는 항목도 목록에 보여 주지만 편집·이동·삭제는 하지 않는다.
+  - 하이라이트(`.hlt`) 편집, 인용 수 조회, 논문 채팅, PDF 업로드는 아직 arxivjs 앱에서 한다.
+
 ### 문제 해결
 
 | 증상                           | 해결                                                                                    |
@@ -277,6 +291,10 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | 새로 추가한 논문이 안 보인다   | Reload `⟳` 버튼을 누른다. 이 확장은 자동으로 감지하지 않는다.                           |
 | 논문에 "문서 없음"이 표시된다  | 그 논문의 `.md` 파일이 아직 없다. 메타 정보와 초록만 보여준다.                          |
 | 수식 일부가 원문 그대로 보인다 | KaTeX가 지원하지 않는 LaTeX 문법이다. 해당 수식만 원문으로 표시된다.                    |
+| 쓰기 메뉴와 버튼이 안 보인다   | 설정 `arxivjs.enableWrite`를 켠다.                                                      |
+| 요약이 "userprompt.txt" 오류로 시작하지 않는다 | 데이터 폴더에 `userprompt.txt`를 만들고 본문 자리에 `{context}`를 넣는다. |
+| 요약이 PDF 오류로 실패한다     | 논문의 URL과 `source`를 확인한다. 스캔한 이미지 PDF는 텍스트가 없어 요약할 수 없다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다. |
+| Ollama 요약이 앞부분만 다룬다  | Ollama의 문맥 길이(`num_ctx`)가 짧다. Modelfile이나 Ollama 설정에서 늘린다.             |
 | 그 밖의 오류                   | **View → Output**에서 출력 채널 `ArxivJS`의 로그를 확인한다.                            |
 
 ## 개발자 가이드
@@ -336,6 +354,9 @@ npm run test:integration
   3. 테스트를 실행한다.
   4. 읽기 전용을 되돌린다.
   5. 기록과 비교해서 파일이 생기거나, 사라지거나, 바뀌었으면 실패로 처리한다.
+- 쓰기 기능 테스트는 fixture를 OS 임시 폴더로 복사한 뒤 그 복사본에 쓴다.
+  - 단위 테스트는 `test/unit/tempData.ts`, 통합 테스트는 `test/integration/tempData.ts`가 복사한다. ESLint는 테스트 코드 중 이 두 파일에서만 파일 쓰기를 허용한다.
+  - 통합 테스트 `writeFlow.test.ts`는 입력 창·QuickPick·확인 대화상자 함수를 미리 정한 답을 돌려주는 함수로 바꾸고, 전역 `fetch`를 가짜 arXiv·PDF·Ollama 응답으로 바꾼 뒤 실제 명령을 실행한다. 네트워크는 쓰지 않는다.
 - 통합 테스트는 기본으로 최신 안정판 VS Code에서 실행한다. 최소 지원 버전에서 확인하려면 다음처럼 실행한다.
 
   ```bash
@@ -378,7 +399,7 @@ npm run package
 | `name`           | `arxivjs-viewer`                                    | 소문자, 공백 없음                              |
 | `displayName`    | `ArxivJS VSCode Extension`                          | Marketplace에 표시되는 이름                    |
 | `publisher`      | `doosik71`                                          | 게시자 ID. 확장 ID는 `doosik71.arxivjs-viewer` |
-| `version`        | `0.2.0`                                             | SemVer                                         |
+| `version`        | `0.3.0`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |
 | `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
 | `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
@@ -423,7 +444,7 @@ npx @vscode/vsce login doosik71
 npx @vscode/vsce publish
 ```
 
-- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.2.0.vsix`로 그 파일을 올릴 수 있다.
+- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.0.vsix`로 그 파일을 올릴 수 있다.
 - 웹에서 올릴 수도 있다. <https://marketplace.visualstudio.com/manage>에서 게시자를 고르고 **New extension → Visual Studio Code**로 `.vsix`를 업로드한다.
 - 게시 후 검증을 거쳐 몇 분 안에 Marketplace 검색에 나타난다. 확장 ID는 `doosik71.arxivjs-viewer`다.
 
@@ -432,8 +453,8 @@ npx @vscode/vsce publish
 ### 버전 업데이트와 재게시
 
 ```bash
-npx @vscode/vsce publish patch   # 0.2.0 → 0.2.1
-npx @vscode/vsce publish minor   # 0.2.0 → 0.3.0
+npx @vscode/vsce publish patch   # 0.3.0 → 0.3.1
+npx @vscode/vsce publish minor   # 0.3.0 → 0.4.0
 npx @vscode/vsce publish 1.0.0   # 버전 직접 지정
 ```
 
@@ -451,7 +472,7 @@ VSCodium, Cursor 같은 VS Code 호환 에디터 사용자에게도 배포하려
 
 ```bash
 npx ovsx create-namespace doosik71 -p <token>   # 최초 1회
-npx ovsx publish arxivjs-viewer-0.2.0.vsix -p <token>
+npx ovsx publish arxivjs-viewer-0.3.0.vsix -p <token>
 ```
 
 ### 개발 시 주의 사항

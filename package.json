@@ -2,7 +2,7 @@
   "name": "arxivjs-viewer",
   "displayName": "ArxivJS VSCode Extension",
   "description": "arxivjs 데이터 폴더의 논문을 VS Code에서 탐색한다.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "doosik71",
   "license": "MIT",
   "icon": "media/icon.png",
