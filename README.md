@@ -92,13 +92,13 @@ code --uninstall-extension doosik71.arxivjs-viewer
 처음 실행하면 Activity Bar의 **ArxivJS** 아이콘을 눌렀을 때 "데이터 폴더 선택" 버튼이 보인다.
 
 1. **데이터 폴더 선택** 버튼을 누른다. Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS: 데이터 폴더 선택`을 실행해도 된다.
-2. arxivjs 데이터 폴더(예: `D:\dev\javascript\arxivjsdata`)를 고른다.
+2. arxivjs 데이터 폴더를 고른다.
 
 `settings.json`에 직접 적을 수도 있다.
 
 ```json
 {
-  "arxivjs.dataFolder": "D:\\dev\\javascript\\arxivjsdata"
+  "arxivjs.dataFolder": "<arxivjs 데이터 폴더의 절대 경로>"
 }
 ```
 
@@ -367,7 +367,7 @@ npm run test:integration
 
 ```bash
 npm run bench                            # fixture
-npm run bench -- D:\dev\javascript\arxivjsdata   # 실데이터 (읽기만 한다)
+npm run bench -- <데이터 폴더>          # 실데이터 (읽기만 한다)
 ```
 
 다음 목표를 판정하고, 하나라도 넘으면 종료 코드 1로 끝난다.
@@ -478,7 +478,7 @@ npx ovsx publish arxivjs-viewer-0.3.0.vsix -p <token>
 ### 개발 시 주의 사항
 
 - **실사용 데이터 폴더에 쓰지 않는다.**
-  - 실제 데이터 폴더(예: `D:\dev\javascript\arxivjsdata`)는 열람용으로만 지정한다. 그 폴더를 지정한 창에서는 `arxivjs.enableWrite`를 켜지 않는다.
+  - 실제 데이터 폴더는 열람용으로만 지정한다. 그 폴더를 지정한 창에서는 `arxivjs.enableWrite`를 켜지 않는다.
   - 쓰기 기능을 손으로 확인할 때는 fixture나 실제 데이터의 **복사본**을 쓴다.
   - 테스트, 스크립트, `markdownlint --fix` 같은 자동 수정 도구가 그 경로를 대상으로 삼으면 안 된다.
   - 테스트는 항상 `test/fixtures/` 아래의 데이터로 한다. 쓰기 테스트는 그것을 OS 임시 폴더로 복사해서 한다(`test/unit/tempData.ts`).

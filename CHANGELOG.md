@@ -38,6 +38,7 @@
 
 ### 의존성
 
+- `katex`를 0.16.47에서 0.18.11로 올렸다. 보안 권고 GHSA-238p-pmpm-9mq7(low)을 해결한다. `@vscode/markdown-it-katex`가 `katex ^0.16`을 요구하므로 `package.json`의 `overrides`로 같은 버전을 쓰게 했다. 렌더링 결과와 화면용 CSS 클래스는 그대로다.
 - `unpdf` 1.8.1을 추가했다(MIT, 하위 의존성 없음, pdf.js 내장). PDF 텍스트 추출에 쓰며, 별도 번들 `dist/pdfWorker.js`(약 2.3MB)로 만든다. 메인 번들 크기는 그대로다.
 
 ### 테스트
