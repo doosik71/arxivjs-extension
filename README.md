@@ -1,4 +1,4 @@
-# ArxivJS Viewer
+# ArxivJS VSCode Extension
 
 arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**으로 열람하는 확장이다.
 
@@ -14,7 +14,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**�
 
 ## 목차
 
-- [ArxivJS Viewer](#arxivjs-viewer)
+- [ArxivJS VSCode Extension](#arxivjs-vscode-extension)
   - [목차](#목차)
   - [사용자 가이드](#사용자-가이드)
     - [요구 사항](#요구-사항)
@@ -57,7 +57,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 **읽기 전용**�
 #### 방법 1. Marketplace에서 설치
 
 1. VS Code 왼쪽 Activity Bar에서 **Extensions**(`Ctrl+Shift+X`)를 연다.
-2. `ArxivJS Viewer`를 검색한다. 게시자는 [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)이다.
+2. `ArxivJS VSCode Extension`을 검색한다. 게시자는 [doosik71](https://marketplace.visualstudio.com/publishers/doosik71)이다.
 3. **Install**을 누른다.
 
 명령줄에서는 `code --install-extension doosik71.arxivjs-viewer`로 설치한다.
@@ -78,7 +78,7 @@ code --install-extension arxivjs-viewer-0.1.0.vsix
 
 #### 방법 3. 제거
 
-Extensions 뷰에서 `ArxivJS Viewer`를 찾아 **Uninstall**을 누른다. 명령줄에서는 다음과 같이 한다.
+Extensions 뷰에서 `ArxivJS VSCode Extension`을 찾아 **Uninstall**을 누른다. 명령줄에서는 다음과 같이 한다.
 
 ```bash
 code --uninstall-extension doosik71.arxivjs-viewer
@@ -192,7 +192,7 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 └── ...
 ```
 
-- **주제 폴더 이름**은 영문자, 숫자, 언더스코어(`_`), 하이픈(`-`)만 쓸 수 있다. 이 규칙에 맞지 않는 폴더(예: `.git`)는 목록에 나오지 않는다.
+- **주제 폴더 이름**은 영문자, 숫자, 한글, 공백, 언더스코어(`_`), 괄호(`(`, `)`), 하이픈(`-`)만 쓸 수 있다. 표시할 때는 `_`를 공백으로 바꾸고 연속 공백을 하나로 줄인다(`딥러닝_(Deep_Learning)` → `딥러닝 (Deep Learning)`). 이 규칙에 맞지 않는 폴더(예: `.git`, `a.b`)는 목록에 나오지 않는다.
 - 논문마다 이름이 같은 `.json`과 `.md` 파일이 한 쌍을 이룬다.
 - `.txt`, `.hlt`, `.bak` 등 다른 파일은 무시한다.
 
@@ -327,7 +327,7 @@ npm run package
 | 항목             | 값                                                  | 비고                                           |
 | ---------------- | --------------------------------------------------- | ---------------------------------------------- |
 | `name`           | `arxivjs-viewer`                                    | 소문자, 공백 없음                              |
-| `displayName`    | `ArxivJS Viewer`                                    | Marketplace에 표시되는 이름                    |
+| `displayName`    | `ArxivJS VSCode Extension`                          | Marketplace에 표시되는 이름                    |
 | `publisher`      | `doosik71`                                          | 게시자 ID. 확장 ID는 `doosik71.arxivjs-viewer` |
 | `version`        | `0.2.0`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |

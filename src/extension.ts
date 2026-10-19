@@ -259,7 +259,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     openHomeOnStartup();
   }
 
-  log.info('ArxivJS Viewer activated');
+  log.info('ArxivJS activated');
   return { tree, panels, topicPanel, home, getLibrary: () => library };
 }
 

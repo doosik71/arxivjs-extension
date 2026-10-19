@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 const EXTENSION_ID = 'doosik71.arxivjs-viewer';
 
-suite('ArxivJS Viewer (smoke)', () => {
+suite('ArxivJS (smoke)', () => {
   test('확장이 설치되어 있고 활성화된다', async () => {
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, `${EXTENSION_ID} 확장을 찾을 수 없다`);

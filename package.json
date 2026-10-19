@@ -1,7 +1,7 @@
 {
   "name": "arxivjs-viewer",
-  "displayName": "ArxivJS Viewer",
-  "description": "arxivjs 데이터 폴더의 논문을 읽기 전용으로 열람한다.",
+  "displayName": "ArxivJS VSCode Extension",
+  "description": "arxivjs 데이터 폴더의 논문을 VS Code에서 탐색한다.",
   "version": "0.2.0",
   "publisher": "doosik71",
   "license": "MIT",
@@ -50,7 +50,7 @@
       {
         "view": "arxivjs.topics",
         "when": "arxivjs.state == noFolder",
-        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n선택한 경로는 설정 arxivjs.dataFolder에 저장됩니다. 이 확장은 데이터 폴더를 읽기만 합니다."
+        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n선택한 경로는 설정 arxivjs.dataFolder에 저장됩니다."
       },
       {
         "view": "arxivjs.topics",
@@ -60,7 +60,7 @@
       {
         "view": "arxivjs.topics",
         "when": "arxivjs.state == empty",
-        "contents": "데이터 폴더에 주제 폴더가 없습니다.\n주제 폴더 이름은 영문자, 숫자, _, - 만 쓸 수 있습니다.\n[Reload](command:arxivjs.reload)\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)"
+        "contents": "데이터 폴더에 주제 폴더가 없습니다.\n주제 폴더 이름은 영문자, 숫자, 한글, 공백, _, (, ), - 만 쓸 수 있습니다.\n[Reload](command:arxivjs.reload)\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)"
       }
     ],
     "configuration": {
@@ -70,7 +70,7 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "arxivjs 데이터 폴더의 절대 경로. 이 확장은 이 폴더를 **읽기만** 한다."
+          "markdownDescription": "arxivjs 데이터 폴더의 절대 경로."
         },
         "arxivjs.paperSort": {
           "type": "string",

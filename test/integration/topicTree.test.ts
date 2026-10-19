@@ -58,8 +58,11 @@ suite('Topics 트리', () => {
     await setConfig('dataFolder', FIXTURE);
     const nodes = await topics();
     assert.strictEqual(api.tree.state, 'ready');
+    const labels = nodes.map((n) => label(api.tree.getTreeItem(n)) ?? '');
+    // 한글과 영문의 상대 순서는 로캘을 따르므로, 한글 주제는 포함 여부만 보고 순서는 영문 주제끼리 비교한다.
+    assert.ok(labels.includes('딥러닝 (Deep Learning)'));
     assert.deepStrictEqual(
-      nodes.map((n) => label(api.tree.getTreeItem(n))),
+      labels.filter((l) => /^[\x20-\x7e]+$/.test(l)),
       [
         'Agentic Reasoning',
         'Alzheimer Detection',
@@ -69,6 +72,7 @@ suite('Topics 트리', () => {
         'Few-Shot Learning',
         'Large Language Model',
         'Surgical Instrument Segmentation',
+        'Topic With Spaces',
       ],
     );
     const item = api.tree.getTreeItem(nodes[0]);
@@ -138,7 +142,7 @@ suite('Topics 트리', () => {
     await papersOf('Cosine_Similarity');
     await vscode.commands.executeCommand('arxivjs.reload');
     assert.strictEqual(library.papers.isLoaded('Cosine_Similarity'), false);
-    assert.strictEqual((await topics()).length, 8);
+    assert.strictEqual((await topics()).length, 10);
   });
 
   test('주제 폴더가 없으면 오류 메시지 노드', async () => {

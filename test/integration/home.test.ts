@@ -51,12 +51,12 @@ suite('홈 (주제 목록)', () => {
     await vscode.commands.executeCommand('arxivjs.openHome');
     const data = embeddedData(api.home.html);
     assert.strictEqual(data.folder, fixture);
-    assert.strictEqual(data.rows.length, 8);
+    assert.strictEqual(data.rows.length, 10);
     assert.ok(
       data.rows.every((r) => r.count === undefined),
       '첫 화면 데이터에는 논문 수가 없어야 한다',
     );
-    assert.match(api.home.html!, /주제 8개 · 논문 수 세는 중…/);
+    assert.match(api.home.html!, /주제 10개 · 논문 수 세는 중…/);
 
     await api.home.whenCountsReady();
     const counts = Object.fromEntries(api.home.paperCounts);
@@ -69,6 +69,8 @@ suite('홈 (주제 목록)', () => {
       'Few-Shot_Learning': 3,
       Large_Language_Model: 1,
       Surgical_Instrument_Segmentation: 1,
+      'Topic With Spaces': 1,
+      '딥러닝_(Deep_Learning)': 1,
     });
   });
 
@@ -76,16 +78,16 @@ suite('홈 (주제 목록)', () => {
     await vscode.commands.executeCommand('arxivjs.openHome');
     await api.home.whenCountsReady();
     await api.home.handleMessage({ type: 'ready' }); // 예외 없이 처리되어야 한다.
-    assert.strictEqual(api.home.paperCounts.size, 8);
+    assert.strictEqual(api.home.paperCounts.size, 10);
   });
 
   test('Reload 후에는 이전 개수 세기 결과를 버리고 다시 센다', async () => {
     await vscode.commands.executeCommand('arxivjs.openHome');
     await api.home.whenCountsReady();
     await api.home.handleMessage({ type: 'reload' });
-    await waitFor(() => api.home.paperCounts.size === 0 || api.home.paperCounts.size === 8, '개수 상태가 이상하다');
+    await waitFor(() => api.home.paperCounts.size === 0 || api.home.paperCounts.size === 10, '개수 상태가 이상하다');
     await api.home.whenCountsReady();
-    assert.strictEqual(api.home.paperCounts.size, 8);
+    assert.strictEqual(api.home.paperCounts.size, 10);
   });
 
   test('논문 수를 셀 때는 json을 읽지 않는다 (목록 캐시도 만들지 않는다)', async () => {
@@ -113,7 +115,7 @@ suite('홈 (주제 목록)', () => {
     assert.strictEqual(embeddedData(api.home.html).rows.length, 0);
 
     await setConfig('dataFolder', fixture);
-    await waitFor(() => embeddedData(api.home.html).rows.length === 8, '데이터 폴더를 바꾼 뒤 홈이 다시 그려지지 않았다');
+    await waitFor(() => embeddedData(api.home.html).rows.length === 10, '데이터 폴더를 바꾼 뒤 홈이 다시 그려지지 않았다');
     assert.ok(api.home.isOpen, '데이터 폴더를 바꿔도 홈은 닫지 않는다');
   });
 

@@ -12,7 +12,9 @@
 | `Agentic_Reasoning/` | `citation` 없음, md 없음 | 실데이터 |
 | `Autoencoder/` | `source: "manual"` | 실데이터 |
 | `Broken_Data/` | 깨진 JSON, 수식·`<think>` 샘플, 무시 대상(`.txt`, `.bak`, `.md.bak`) | 합성 |
-| `Invalid Topic Name/` | 이름 규칙 위반 폴더 → 주제 목록에서 제외 | 합성 |
+| `Topic With Spaces/` | 공백이 든 폴더 이름 → 주제로 표시 | 합성 |
+| `딥러닝_(Deep_Learning)/` | 한글·괄호가 든 폴더 이름 → `딥러닝 (Deep Learning)`으로 표시 | 합성 |
+| `Invalid.Topic/` | 이름 규칙 위반 폴더(`.`) → 주제 목록에서 제외 | 합성 |
 | `.hidden/` | dot 폴더 → 제외 | 합성 |
 | `notes.txt` | 최상위 파일 → 제외 | 합성 |
 

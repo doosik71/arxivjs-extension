@@ -9,9 +9,11 @@ const readJson = (p: string) => JSON.parse(fs.readFileSync(path.join(DATA, p), '
 const listJson = (topic: string) => fs.readdirSync(path.join(DATA, topic)).filter((f) => f.endsWith('.json'));
 
 describe('fixture: sample-data', () => {
-  it('하이픈 폴더, 규칙 위반 폴더, dot 폴더, 최상위 파일이 있다', () => {
+  it('하이픈·공백·한글·괄호 폴더, 규칙 위반 폴더, dot 폴더, 최상위 파일이 있다', () => {
     expect(exists('Few-Shot_Learning')).toBe(true);
-    expect(exists('Invalid Topic Name')).toBe(true);
+    expect(exists('Topic With Spaces')).toBe(true);
+    expect(exists('딥러닝_(Deep_Learning)')).toBe(true);
+    expect(exists('Invalid.Topic')).toBe(true);
     expect(exists('.hidden')).toBe(true);
     expect(exists('notes.txt')).toBe(true);
   });

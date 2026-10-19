@@ -12,7 +12,10 @@ describe('TopicRepository (fixture)', () => {
   it('규칙에 맞는 폴더만 표시 이름 순으로 돌려준다', async () => {
     const topics = await new TopicRepository(DATA, nodeReadonlyFs, spyLogger()).list();
 
-    expect(topics.map((t) => t.id)).toEqual([
+    // 한글과 영문의 상대 순서는 시스템 로캘을 따르므로, 순서는 영문 주제끼리만 비교한다.
+    const ids = topics.map((t) => t.id);
+    expect(ids).toContain('딥러닝_(Deep_Learning)');
+    expect(ids.filter((id) => /^[\x20-\x7e]+$/.test(id))).toEqual([
       'Agentic_Reasoning',
       'Alzheimer_Detection',
       'Autoencoder',
@@ -21,19 +24,22 @@ describe('TopicRepository (fixture)', () => {
       'Few-Shot_Learning',
       'Large_Language_Model',
       'Surgical_Instrument_Segmentation',
+      'Topic With Spaces',
     ]);
     expect(topics.find((t) => t.id === 'Few-Shot_Learning')).toEqual({
       id: 'Few-Shot_Learning',
       label: 'Few-Shot Learning',
       path: path.join(DATA, 'Few-Shot_Learning'),
     });
+    expect(topics.find((t) => t.id === '딥러닝_(Deep_Learning)')?.label).toBe('딥러닝 (Deep Learning)');
+    expect(topics.find((t) => t.id === 'Topic With Spaces')?.label).toBe('Topic With Spaces');
   });
 
   it('규칙 위반 폴더는 경고하고, dot 폴더와 파일은 조용히 제외한다', async () => {
     const log = spyLogger();
     await new TopicRepository(DATA, nodeReadonlyFs, log).list();
     expect(log.warn).toHaveBeenCalledTimes(1);
-    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid Topic Name'));
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid.Topic'));
   });
 
   it('데이터 폴더가 없으면 DataError(notFound)', async () => {

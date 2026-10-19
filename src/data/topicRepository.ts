@@ -52,7 +52,7 @@ export class TopicRepository {
         continue;
       }
       if (!isValidTopicName(entry.name)) {
-        this.log.warn(`주제 폴더 이름 규칙(영숫자, _, -)에 맞지 않아 제외: "${entry.name}"`);
+        this.log.warn(`주제 폴더 이름 규칙(영문, 숫자, 한글, 공백, _, (, ), -)에 맞지 않아 제외: "${entry.name}"`);
         continue;
       }
       topics.push({ id: entry.name, label: toDisplayName(entry.name), path: path.join(this.root, entry.name) });
