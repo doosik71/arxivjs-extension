@@ -56,7 +56,7 @@ suite('홈 (주제 목록)', () => {
       data.rows.every((r) => r.count === undefined),
       '첫 화면 데이터에는 논문 수가 없어야 한다',
     );
-    assert.match(api.home.html!, /주제 10개 · 논문 수 세는 중…/);
+    assert.match(api.home.html!, /Topics: 10 · counting papers…/);
 
     await api.home.whenCountsReady();
     const counts = Object.fromEntries(api.home.paperCounts);
@@ -111,7 +111,7 @@ suite('홈 (주제 목록)', () => {
   test('데이터 폴더가 없으면 안내, 바꾸면 새 폴더로 다시 그린다', async () => {
     await setConfig('dataFolder', '');
     await vscode.commands.executeCommand('arxivjs.openHome');
-    assert.match(api.home.html!, /데이터 폴더가 설정되지 않았습니다/);
+    assert.match(api.home.html!, /No data folder is set/);
     assert.strictEqual(embeddedData(api.home.html).rows.length, 0);
 
     await setConfig('dataFolder', fixture);

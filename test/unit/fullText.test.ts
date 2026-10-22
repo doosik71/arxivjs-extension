@@ -31,7 +31,7 @@ describe('downloadPdf', () => {
   it('HTTP 오류, PDF가 아닌 응답, 너무 큰 파일은 FullTextError', async () => {
     await expect(downloadPdf('https://x/p.pdf', { fetch: pdfFetch('', { status: 404 }) })).rejects.toThrow(/HTTP 404/);
     await expect(downloadPdf('https://x/p.pdf', { fetch: pdfFetch('<html>login</html>', { headers: { 'content-type': 'text/html' } }) })).rejects.toThrow(
-      /PDF가 아닙니다 \(text\/html\)/,
+      /not a PDF \(text\/html\)/,
     );
     await expect(downloadPdf('https://x/p.pdf', { fetch: pdfFetch(PDF, { headers: { 'content-length': String(200 * 1024 * 1024) } }) })).rejects.toThrow(
       FullTextError,
@@ -78,7 +78,7 @@ describe('getFullText (임시 복사본)', () => {
   });
 
   it('텍스트가 비면(스캔 PDF) FullTextError이고 .txt를 만들지 않는다', async () => {
-    await expect(getFullText(ctx, topic(), paper('broken_json_paper'), arxivMeta, { fetch: pdfFetch(), extract: async () => ' \n ' })).rejects.toThrow(/텍스트가 없습니다/);
+    await expect(getFullText(ctx, topic(), paper('broken_json_paper'), arxivMeta, { fetch: pdfFetch(), extract: async () => ' \n ' })).rejects.toThrow(/has no text/);
     expect(existsSync(path.join(data.root, 'Broken_Data', 'broken_json_paper.txt'))).toBe(false);
   });
 });

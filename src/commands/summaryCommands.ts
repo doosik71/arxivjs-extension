@@ -2,6 +2,7 @@
 // 실제 작업은 src/llm/summarize.ts가 한다.
 import * as vscode from 'vscode';
 import type { Topic } from '../data/models';
+import { t } from '../i18n';
 import { LlmError } from '../llm/common';
 import { checkLlmSettings, describeEngine, type LlmSettings } from '../llm/engine';
 import { readPromptTemplate, summarizePaper, type SummaryStage } from '../llm/summarize';
@@ -31,7 +32,7 @@ export interface SummaryCommandHost {
 }
 
 const stageText = (settings: LlmSettings, stage: SummaryStage, chars?: number) =>
-  stage === 'text' ? '전문 텍스트 준비 중…' : `${describeEngine(settings)} 응답 받는 중… ${(chars ?? 0).toLocaleString('en-US')}자`;
+  stage === 'text' ? t().summaryCmd.preparingText : t().summaryCmd.receiving(describeEngine(settings), chars ?? 0);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -46,11 +47,13 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
     const settings = await host.llmSettings();
     const problem = checkLlmSettings(settings);
     if (problem) {
-      const action = settings.engine === 'gemini' && !settings.geminiApiKey ? 'API 키 설정' : '설정 열기';
+      const setKey = t().summaryCmd.setApiKey;
+      const openSettings = t().common.openSettings;
+      const action = settings.engine === 'gemini' && !settings.geminiApiKey ? setKey : openSettings;
       const choice = await vscode.window.showWarningMessage(`ArxivJS: ${problem}`, action);
-      if (choice === 'API 키 설정') {
+      if (choice === setKey) {
         await vscode.commands.executeCommand('arxivjs.setGeminiApiKey');
-      } else if (choice === '설정 열기') {
+      } else if (choice === openSettings) {
         await vscode.commands.executeCommand('workbench.action.openSettings', 'arxivjs.llm');
       }
       return undefined;
@@ -61,34 +64,34 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
   /** 사용자에게 보일 이유가 있는 오류(LLM, 전문 텍스트)는 그대로, 나머지는 공용 처리 */
   const reportSummaryError = (title: string, err: unknown) => {
     if (err instanceof LlmError || err instanceof FullTextError) {
-      log.error(`요약 실패: ${title} — ${err.message}`);
-      void vscode.window.showErrorMessage(`ArxivJS: 요약하지 못했습니다. ${err.message}`);
+      log.error(`Summary failed: ${title} — ${err.message}`);
+      void vscode.window.showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`);
     } else {
-      reportError('요약', err);
+      reportError((msg) => msg.action.summarize, err);
     }
   };
 
   return [
     vscode.commands.registerCommand('arxivjs.setGeminiApiKey', async () => {
       const key = await vscode.window.showInputBox({
-        title: 'ArxivJS: Gemini API 키 설정',
-        prompt: 'Google AI Studio(https://aistudio.google.com/apikey)에서 만든 키. OS 자격 증명 저장소(SecretStorage)에 저장합니다.',
+        title: t().summaryCmd.apiKeyTitle,
+        prompt: t().summaryCmd.apiKeyPrompt,
         password: true,
         ignoreFocusOut: true,
-        validateInput: (v) => (/\s/.test(v.trim()) ? '공백이 들어 있습니다.' : undefined),
+        validateInput: (v) => (/\s/.test(v.trim()) ? t().summaryCmd.apiKeyWhitespace : undefined),
       });
       if (!key?.trim()) {
         return;
       }
       await host.secrets.store(GEMINI_KEY_SECRET, key.trim());
-      log.info('Gemini API 키를 저장했다.'); // 키 값은 기록하지 않는다.
-      void vscode.window.showInformationMessage('ArxivJS: Gemini API 키를 저장했습니다.');
+      log.info('Saved the Gemini API key.'); // 키 값은 기록하지 않는다.
+      void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.apiKeySaved}`);
     }),
 
     vscode.commands.registerCommand('arxivjs.clearGeminiApiKey', async () => {
       await host.secrets.delete(GEMINI_KEY_SECRET);
-      log.info('Gemini API 키를 지웠다.');
-      void vscode.window.showInformationMessage('ArxivJS: Gemini API 키를 지웠습니다.');
+      log.info('Deleted the Gemini API key.');
+      void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.apiKeyCleared}`);
     }),
 
     vscode.commands.registerCommand('arxivjs.summarizePaper', async (arg?: unknown) => {
@@ -99,7 +102,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
       }
       const { topic, paper } = target;
       if (running.has(paper.id)) {
-        void vscode.window.showInformationMessage('ArxivJS: 이 논문은 이미 요약 중입니다.');
+        void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.alreadyRunning}`);
         return;
       }
       const settings = await readySettings();
@@ -107,19 +110,20 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
         return;
       }
       if (paper.mdPath) {
+        const m = t().summaryCmd;
         const choice = await vscode.window.showWarningMessage(
-          `논문 "${ellipsize(paper.meta.title, 60)}"의 요약을 다시 만들까요?`,
-          { modal: true, detail: '기존 요약(.md)은 백업 없이 바뀝니다. 하이라이트(.hlt)는 새 요약과 맞지 않을 수 있습니다.' },
-          '다시 만들기',
+          m.confirmRegenerate(ellipsize(paper.meta.title, 60)),
+          { modal: true, detail: m.regenerateDetail },
+          m.regenerate,
         );
-        if (choice !== '다시 만들기') {
+        if (choice !== m.regenerate) {
           return;
         }
       }
       running.add(paper.id);
       try {
         await vscode.window.withProgress(
-          { location: vscode.ProgressLocation.Notification, title: `ArxivJS: 요약 — ${ellipsize(paper.meta.title, 40)}`, cancellable: true },
+          { location: vscode.ProgressLocation.Notification, title: t().summaryCmd.progressTitle(ellipsize(paper.meta.title, 40)), cancellable: true },
           async (progress, token) => {
             const controller = new AbortController();
             token.onCancellationRequested(() => controller.abort());
@@ -131,13 +135,13 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
                 signal: controller.signal,
                 onProgress: (stage, chars) => progress.report({ message: stageText(settings, stage, chars) }),
               });
-              log.info(`요약 저장: ${paper.id} (${describeEngine(settings)}, ${result.chars}자)`);
+              log.info(`Saved summary: ${paper.id} (${describeEngine(settings)}, ${result.chars} chars)`);
               await host.reloadPaper(target);
-              void vscode.window.showInformationMessage(`ArxivJS: 요약을 저장했습니다 (${result.chars.toLocaleString('en-US')}자).`);
+              void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.saved(result.chars)}`);
             } catch (err) {
               if (controller.signal.aborted) {
-                log.info(`요약 취소: ${paper.id}`);
-                void vscode.window.showInformationMessage('ArxivJS: 요약을 취소했습니다. 요약 문서는 바뀌지 않았습니다.');
+                log.info(`Summary cancelled: ${paper.id}`);
+                void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.cancelled}`);
               } else {
                 reportSummaryError(paper.id, err);
               }
@@ -152,7 +156,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
     vscode.commands.registerCommand('arxivjs.summarizeTopic', async (node?: unknown) => {
       const library = writableLibrary();
       const n = node as TreeNode | undefined;
-      const topic = library && (n?.kind === 'topic' ? n.topic : await host.pickTopic('요약 없는 논문 일괄 요약: 주제 선택'));
+      const topic = library && (n?.kind === 'topic' ? n.topic : await host.pickTopic(t().summaryCmd.batchPick));
       if (!library || !topic) {
         return;
       }
@@ -168,18 +172,16 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
       }
       const papers = (await library.papers.list(topic)).filter((p) => p.jsonPath && !p.mdPath && !p.metaError && !running.has(p.id));
       if (papers.length === 0) {
-        void vscode.window.showInformationMessage(`ArxivJS: 주제 "${topic.label}"에 요약 문서가 없는 논문이 없습니다.`);
+        void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.noneMissing(topic.label)}`);
         return;
       }
+      const m = t().summaryCmd;
       const choice = await vscode.window.showWarningMessage(
-        `주제 "${topic.label}"에서 요약 문서가 없는 논문 ${papers.length}편을 요약할까요?`,
-        {
-          modal: true,
-          detail: `${describeEngine(settings)}로 한 편씩 차례로 요약합니다. 진행률 알림에서 취소할 수 있습니다. PDF를 내려받은 뒤에는 ${ARXIV_DELAY_MS / 1000}초씩 기다립니다(arXiv 요청 간격).`,
-        },
-        '요약',
+        m.confirmBatch(topic.label, papers.length),
+        { modal: true, detail: m.batchDetail(describeEngine(settings), ARXIV_DELAY_MS / 1000) },
+        m.summarize,
       );
-      if (choice !== '요약') {
+      if (choice !== m.summarize) {
         return;
       }
 
@@ -188,7 +190,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
       let skipped = 0;
       let cancelled = false;
       await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `ArxivJS: 일괄 요약 — ${topic.label}`, cancellable: true },
+        { location: vscode.ProgressLocation.Notification, title: m.batchTitle(topic.label), cancellable: true },
         async (progress, token) => {
           const controller = new AbortController();
           token.onCancellationRequested(() => controller.abort());
@@ -214,7 +216,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
                 onProgress: (stage, chars) => progress.report({ message: `${head} — ${stageText(settings, stage, chars)}` }),
               });
               ok++;
-              log.info(`요약 저장: ${paper.id} (${describeEngine(settings)}, ${result.chars}자)`);
+              log.info(`Saved summary: ${paper.id} (${describeEngine(settings)}, ${result.chars} chars)`);
               await host.reloadPaper({ topic, paper: fresh });
               if (result.downloaded && i < papers.length - 1) {
                 await delay(ARXIV_DELAY_MS);
@@ -224,7 +226,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
                 break;
               }
               failed++;
-              log.error(`요약 실패: ${paper.id} — ${err instanceof Error ? err.message : String(err)}`);
+              log.error(`Summary failed: ${paper.id} — ${err instanceof Error ? err.message : String(err)}`);
             } finally {
               running.delete(paper.id);
             }
@@ -234,8 +236,7 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
         },
       );
       host.reloadTopic(topic.id);
-      const summary = `요약 ${ok}편 완료` + (failed ? `, 실패 ${failed}편` : '') + (skipped ? `, 건너뜀 ${skipped}편` : '');
-      const text = `ArxivJS: ${cancelled ? '일괄 요약을 취소했습니다. ' : ''}${summary}.${failed ? ' 실패 이유는 출력 채널 ArxivJS에 있습니다.' : ''}`;
+      const text = `ArxivJS: ${m.batchResult({ ok, failed, skipped, cancelled })}`;
       void (failed ? vscode.window.showWarningMessage(text) : vscode.window.showInformationMessage(text));
     }),
   ];

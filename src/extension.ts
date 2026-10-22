@@ -6,6 +6,7 @@ import { CONFIG_SECTION, readConfig, saveDataFolder, type ArxivjsConfig } from '
 import { Library } from './data/library';
 import type { Paper, Topic } from './data/models';
 import { nodeReadonlyFs } from './data/readonlyFs';
+import { currentLanguage, messagesFor, resolveLanguage, setLanguage, t } from './i18n';
 import type { PdfTextExtractor } from './sources/fullText';
 import { createPdfWorkerExtractor } from './sources/pdfWorkerClient';
 import { createLogger } from './util/log';
@@ -38,12 +39,14 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   const log = createLogger();
   let config: ArxivjsConfig = readConfig();
   let library: Library | undefined;
+  // 표시 언어는 활성화할 때 한 번 정한다. 바꾸면 창을 다시 로드해야 적용된다.
+  setLanguage(resolveLanguage(config.language, vscode.env.language));
 
   const createLibrary = () => {
     library = config.dataFolder
       ? new Library(config.dataFolder, nodeReadonlyFs, log, () => config.paperSort, () => config.enableWrite)
       : undefined;
-    log.info(`데이터 폴더: ${config.dataFolder ?? '(설정 안 됨)'}`);
+    log.info(`Data folder: ${config.dataFolder ?? '(not set)'}`);
   };
   createLibrary();
 
@@ -86,7 +89,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
 
   /** 전체 Reload: 캐시를 비우고 트리, 홈, Topic 패널을 다시 그린다. */
   const reloadAll = () => {
-    log.info('Reload: 전체');
+    log.info('Reload: all');
     tree.reloadAll();
     void topicPanel.refresh();
     void home.refresh();
@@ -94,7 +97,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
 
   /** 주제 Reload: 그 주제의 캐시를 비우고 트리 노드, 홈, (보고 있으면) Topic 패널을 다시 그린다. */
   const reloadTopic = (topicId: string) => {
-    log.info(`Reload: 주제 ${topicId}`);
+    log.info(`Reload: topic ${topicId}`);
     tree.reloadTopic(topicId);
     void topicPanel.refresh(topicId);
     void home.refresh();
@@ -150,12 +153,12 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   /** 주제 QuickPick */
   const pickTopic = async (title: string): Promise<Topic | undefined> => {
     if (!library) {
-      void vscode.window.showWarningMessage('ArxivJS: 데이터 폴더를 먼저 설정하세요.');
+      void vscode.window.showWarningMessage(`ArxivJS: ${t().common.setDataFolderFirst}`);
       return undefined;
     }
     const picked = await vscode.window.showQuickPick<vscode.QuickPickItem & { topic: Topic }>(
-      library.topics.list().then((topics) => topics.map((t) => ({ label: t.label, description: t.id, topic: t }))),
-      { title, placeHolder: '주제 이름으로 검색', matchOnDescription: true },
+      library.topics.list().then((topics) => topics.map((topic) => ({ label: topic.label, description: topic.id, topic }))),
+      { title, placeHolder: t().extension.searchTopicsPlaceholder, matchOnDescription: true },
     );
     return picked?.topic;
   };
@@ -163,7 +166,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
   /** 인자 없이 "논문 열기"를 실행하면 주제 → 논문 순으로 고른다. */
   const pickPaper = async (): Promise<PaperTarget | undefined> => {
     const lib = library;
-    const topic = await pickTopic('논문 열기: 주제 선택');
+    const topic = await pickTopic(t().extension.openPaperPickTopic);
     if (!topic || !lib) {
       return undefined;
     }
@@ -171,7 +174,12 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       lib.papers.list(topic).then((papers) =>
         papers.map((p) => ({ label: p.meta.title, description: paperDescription(p), detail: p.meta.authors, paper: p })),
       ),
-      { title: `논문 열기: ${topic.label}`, placeHolder: '제목이나 저자로 검색', matchOnDescription: true, matchOnDetail: true },
+      {
+        title: t().extension.openPaperTitle(topic.label),
+        placeHolder: t().extension.searchPapersPlaceholder,
+        matchOnDescription: true,
+        matchOnDetail: true,
+      },
     );
     return paper && { topic, paper: paper.paper };
   };
@@ -198,8 +206,8 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         canSelectFolders: true,
         canSelectFiles: false,
         canSelectMany: false,
-        openLabel: '데이터 폴더로 사용',
-        title: 'arxivjs 데이터 폴더 선택',
+        openLabel: t().extension.useAsDataFolder,
+        title: t().extension.selectDataFolderTitle,
         defaultUri: config.dataFolder ? vscode.Uri.file(config.dataFolder) : undefined,
       });
       if (!picked?.[0]) {
@@ -224,7 +232,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
     vscode.commands.registerCommand('arxivjs.reloadPaper', () => panels.reload()),
 
     vscode.commands.registerCommand('arxivjs.openTopic', async (node?: TreeNode) => {
-      const topic = node?.kind === 'topic' ? node.topic : await pickTopic('주제 열기');
+      const topic = node?.kind === 'topic' ? node.topic : await pickTopic(t().common.openTopic);
       if (topic) {
         await topicPanel.show(topic);
       }
@@ -242,7 +250,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       if (url) {
         await openExternalUrl(url, log);
       } else {
-        void vscode.window.showInformationMessage('ArxivJS: 이 논문에는 URL이 없습니다.');
+        void vscode.window.showInformationMessage(`ArxivJS: ${t().extension.noUrl}`);
       }
     }),
 
@@ -250,7 +258,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       const target = resolvePaper(node);
       if (target) {
         await vscode.env.clipboard.writeText(citationText(target.paper));
-        void vscode.window.setStatusBarMessage('ArxivJS: 논문 정보를 복사했습니다.', 3000);
+        void vscode.window.setStatusBarMessage(`ArxivJS: ${t().common.copiedInfo}`, 3000);
       }
     }),
 
@@ -310,6 +318,14 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
       }
       const previous = config;
       config = readConfig();
+      const language = resolveLanguage(config.language, vscode.env.language);
+      if (e.affectsConfiguration(`${CONFIG_SECTION}.language`) && language !== currentLanguage()) {
+        // 열린 화면을 모두 다시 그리지 않고 창을 다시 로드하게 한다. 안내는 새 언어로 보인다.
+        const m = messagesFor(language).common;
+        void vscode.window
+          .showInformationMessage(`ArxivJS: ${m.languageChanged}`, m.reloadWindow)
+          .then((b) => b === m.reloadWindow && vscode.commands.executeCommand('workbench.action.reloadWindow'));
+      }
       if (config.dataFolder !== previous.dataFolder || config.dataFolderRaw !== previous.dataFolderRaw) {
         panels.closeAll(); // 다른 데이터 폴더의 내용을 계속 보여주지 않는다.
         metaEditor.closeAll();
@@ -322,7 +338,7 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
         tree.refresh(); // 캐시는 그대로 두고 정렬만 다시 한다.
       }
       if (config.enableWrite !== previous.enableWrite) {
-        log.info(`데이터 폴더 쓰기: ${config.enableWrite ? '켜짐' : '꺼짐'}`);
+        log.info(`Data folder writes: ${config.enableWrite ? 'on' : 'off'}`);
         void home.refresh(); // 쓰기 버튼을 보이거나 숨긴다.
         void topicPanel.refresh();
         void panels.rerenderAll();

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DataError, isNotFound } from '../data/errors';
 import type { Library } from '../data/library';
 import type { Paper, Topic } from '../data/models';
+import { t } from '../i18n';
 import type { Logger } from '../util/logger';
 import { paperDescription, paperTooltipLines, topicDescription } from './format';
 
@@ -137,7 +138,7 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
       this.setState(topics.length > 0 ? 'ready' : 'empty');
       return topics.map((topic) => this.topicNode(topic));
     } catch (err) {
-      this.log.error(`데이터 폴더를 읽지 못함: ${library.root} — ${errorText(err)}`);
+      this.log.error(`Could not read the data folder: ${library.root} — ${errorText(err)}`);
       this.setState('invalidFolder');
       return [];
     }
@@ -153,8 +154,8 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
       this.setPaperCount(node, papers.length);
       return papers.map((paper) => ({ kind: 'paper', paper, parent: node }));
     } catch (err) {
-      this.log.error(`주제를 읽지 못함: ${node.topic.id} — ${errorText(err)}`);
-      const text = isNotFound(err) ? '주제 폴더를 찾을 수 없습니다. Reload 하세요.' : '논문 목록을 읽지 못했습니다. 출력 채널 ArxivJS를 확인하세요.';
+      this.log.error(`Could not read the topic: ${node.topic.id} — ${errorText(err)}`);
+      const text = isNotFound(err) ? t().common.topicNotFound : t().common.paperListError;
       return [{ kind: 'message', text, isError: true, parent: node }];
     }
   }
@@ -185,7 +186,7 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
     item.tooltip = `${topic.id}\n${topic.path}`;
     item.iconPath = new vscode.ThemeIcon('library');
     item.contextValue = TOPIC_CONTEXT;
-    item.command = { command: OPEN_TOPIC_COMMAND, title: '주제 열기', arguments: [node] };
+    item.command = { command: OPEN_TOPIC_COMMAND, title: t().common.openTopic, arguments: [node] };
     return item;
   }
 
@@ -196,7 +197,7 @@ export class TopicTreeProvider implements vscode.TreeDataProvider<TreeNode>, vsc
     item.description = paperDescription(paper);
     item.iconPath = new vscode.ThemeIcon(paper.metaError ? 'warning' : paper.mdPath ? 'markdown' : 'file');
     item.contextValue = paper.mdPath ? PAPER_CONTEXT : `${PAPER_CONTEXT}.noMarkdown`;
-    item.command = { command: OPEN_PAPER_COMMAND, title: '논문 열기', arguments: [node] };
+    item.command = { command: OPEN_PAPER_COMMAND, title: t().common.openPaper, arguments: [node] };
     return item;
   }
 

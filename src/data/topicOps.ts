@@ -1,5 +1,6 @@
 // 토픽 생성·이름 변경·삭제 (DEV-PLAN §6.6.1, 형식 명세 §6.3). vscode 비의존.
 import * as path from 'node:path';
+import { t } from '../i18n';
 import { TOPIC_NAME_PATTERN, toDisplayName, toTopicFolderName } from '../util/displayName';
 import type { DataWriter } from './dataWriter';
 import { DataError } from './errors';
@@ -26,20 +27,20 @@ export async function listRootNames(ctx: DataOpsContext): Promise<string[]> {
 export function checkTopicName(displayName: string, existingNames: readonly string[], currentFolder?: string): string | undefined {
   const label = toDisplayName(displayName);
   if (!label) {
-    return '주제 이름을 입력하세요.';
+    return t().data.topicNameRequired;
   }
   if (!TOPIC_NAME_PATTERN.test(label)) {
-    return '영문, 숫자, 한글, 공백, 괄호, 하이픈만 쓸 수 있습니다.';
+    return t().data.topicNameInvalid;
   }
   const folder = toTopicFolderName(label);
   if (folder === currentFolder) {
-    return '지금 이름과 같습니다.';
+    return t().data.topicNameUnchanged;
   }
   const key = label.toLowerCase();
   const clash = existingNames.find(
     (name) => name !== currentFolder && (name.toLowerCase() === folder.toLowerCase() || toDisplayName(name).toLowerCase() === key),
   );
-  return clash === undefined ? undefined : `같은 이름의 주제가 이미 있습니다: ${clash}`;
+  return clash === undefined ? undefined : t().data.topicNameExists(clash);
 }
 
 async function validated(ctx: DataOpsContext, displayName: string, currentFolder?: string): Promise<string> {
@@ -69,10 +70,10 @@ export async function renameTopic(ctx: DataOpsContext, topicId: string, newDispl
 export function summarizeEntries(names: readonly string[]): string {
   const counts = new Map<string, number>();
   for (const name of names) {
-    const ext = name.startsWith('.') ? name : path.extname(name).toLowerCase() || '(확장자 없음)';
+    const ext = name.startsWith('.') ? name : path.extname(name).toLowerCase() || t().data.noExtension;
     counts.set(ext, (counts.get(ext) ?? 0) + 1);
   }
-  return [...counts].map(([ext, n]) => `${ext} ${n}개`).join(', ');
+  return [...counts].map(([ext, n]) => t().data.entryCount(ext, n)).join(', ');
 }
 
 /** 주제 폴더가 완전히 비어 있을 때만 지운다. 비어 있지 않으면 conflict (메시지에 남은 항목 요약). */
@@ -80,7 +81,7 @@ export async function deleteTopic(ctx: DataOpsContext, topicId: string): Promise
   const dir = path.join(ctx.root, topicId);
   const names = (await ctx.fs.readDir(dir)).map((e) => e.name);
   if (names.length > 0) {
-    throw new DataError('conflict', dir, `주제 폴더가 비어 있지 않습니다 (${summarizeEntries(names)}).`);
+    throw new DataError('conflict', dir, t().data.topicNotEmpty(summarizeEntries(names)));
   }
   await ctx.writer.removeEmptyDirectory(dir);
 }

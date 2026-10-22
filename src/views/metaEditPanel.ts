@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { MetaFormErrors, MetaFormValues } from '../data/metaForm';
+import { t } from '../i18n';
 import { createNonce } from '../render/html';
 import { buildMetaFormHtml } from '../render/metaFormHtml';
 import type { Logger } from '../util/logger';
@@ -103,8 +104,8 @@ export class MetaEditPanelManager implements vscode.Disposable {
     try {
       failure = await request.save(values);
     } catch (err) {
-      this.log.error(`메타 정보 저장 실패: ${String(err)}`);
-      failure = { message: '저장하지 못했습니다. 출력 채널 ArxivJS를 확인하세요.' };
+      this.log.error(`Failed to save metadata: ${String(err)}`);
+      failure = { message: t().metaForm.saveFailed };
     }
     if (this.request !== request) {
       return; // 그사이 다른 폼을 열었다.

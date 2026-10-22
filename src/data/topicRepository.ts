@@ -43,7 +43,7 @@ export class TopicRepository {
   private async scan(): Promise<Topic[]> {
     const rootStat = await this.fs.stat(this.root);
     if (!rootStat.isDirectory) {
-      throw new DataError('notDirectory', this.root, '데이터 폴더가 디렉터리가 아니다');
+      throw new DataError('notDirectory', this.root, 'the data folder is not a directory');
     }
 
     const topics: Topic[] = [];
@@ -52,7 +52,7 @@ export class TopicRepository {
         continue;
       }
       if (!isValidTopicName(entry.name)) {
-        this.log.warn(`주제 폴더 이름 규칙(영문, 숫자, 한글, 공백, _, (, ), -)에 맞지 않아 제외: "${entry.name}"`);
+        this.log.warn(`Skipped a folder that breaks the topic name rules (letters, digits, Hangul, space, _, (, ), -): "${entry.name}"`);
         continue;
       }
       topics.push({ id: entry.name, label: toDisplayName(entry.name), path: path.join(this.root, entry.name) });

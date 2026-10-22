@@ -1,6 +1,7 @@
 // Paper 패널 HTML 템플릿 (vscode 비의존). 데이터 문자열은 모두 여기서 이스케이프한다.
 import { randomBytes } from 'node:crypto';
-import { countAuthors, formatCitation } from '../views/format';
+import { currentLanguage, t } from '../i18n';
+import { countAuthors } from '../views/format';
 import type { Heading } from './markdown';
 
 const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -78,12 +79,12 @@ function authorsLine(authors: string): string {
   if (!authors) {
     return '';
   }
-  const count = formatCitation(countAuthors(authors));
+  const more = escapeHtml(t().paper.showAllAuthors(countAuthors(authors)));
   return (
     `<div class="authors" id="authors">` +
     `<span class="authors-text">${escapeHtml(authors)}</span>` +
     `<button type="button" class="link authors-toggle" data-toggle="authors" aria-controls="authors" aria-expanded="false" hidden ` +
-    `data-more="모두 보기 (${count}명)" data-less="접기">모두 보기 (${count}명)</button>` +
+    `data-more="${more}" data-less="${escapeHtml(t().paper.collapse)}">${more}</button>` +
     `</div>`
   );
 }
@@ -94,7 +95,7 @@ function metaLine(vm: PaperViewModel): string {
     parts.push(`<span class="year">${vm.year}</span>`);
   }
   if (vm.citation !== undefined) {
-    parts.push(`<span class="citation">인용 ${formatCitation(vm.citation)}</span>`);
+    parts.push(`<span class="citation">${escapeHtml(t().common.citedBy(vm.citation))}</span>`);
   }
   if (vm.source) {
     parts.push(`<span class="badge source-${escapeHtml(vm.source.toLowerCase())}">${escapeHtml(vm.source)}</span>`);
@@ -107,7 +108,8 @@ function toc(headings: Heading[]): string {
     return '';
   }
   const items = headings.map((h) => `<li><a href="#${escapeHtml(h.id)}">${escapeHtml(h.text)}</a></li>`).join('');
-  return `<nav class="toc" aria-label="목차"><details open><summary>목차</summary><ol>${items}</ol></details></nav>`;
+  const label = escapeHtml(t().paper.toc);
+  return `<nav class="toc" aria-label="${label}"><details open><summary>${label}</summary><ol>${items}</ol></details></nav>`;
 }
 
 function notices(list: Notice[]): string {
@@ -116,27 +118,24 @@ function notices(list: Notice[]): string {
 
 export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): string {
   const styles = res.styleUris.map((u) => `<link rel="stylesheet" href="${escapeHtml(u)}">`).join('\n  ');
-  const openButton = vm.url
-    ? `<button type="button" data-action="openExternal" title="${escapeHtml(vm.url)}">원문 열기</button>`
-    : '';
-  const localButton = vm.localDocument
-    ? `<button type="button" data-action="openLocal" title="${escapeHtml(vm.localDocument)}">로컬 문서 열기</button>`
-    : '';
+  const m = t().paper;
+  const button = (action: string, title: string, text: string) =>
+    `<button type="button" data-action="${action}" title="${escapeHtml(title)}">${escapeHtml(text)}</button>`;
+  const openButton = vm.url ? button('openExternal', vm.url, m.openOriginal) : '';
+  const localButton = vm.localDocument ? button('openLocal', vm.localDocument, m.openLocal) : '';
   const summarize = vm.writeActions?.summarize;
   const writeButtons = [
-    summarize
-      ? `<button type="button" data-action="summarize" title="Gemini 또는 Ollama로 요약 문서(.md) 만들기">${summarize === 'create' ? '요약 생성' : '요약 다시 생성'}</button>`
-      : '',
-    vm.writeActions?.editMeta ? '<button type="button" data-action="editMeta" title="메타 정보(.json) 편집">메타 편집</button>' : '',
-    vm.writeActions?.deleteSummary ? '<button type="button" data-action="deleteSummary" title="요약 문서(.md)와 하이라이트 삭제">요약 삭제</button>' : '',
+    summarize ? button('summarize', m.summarizeTitle, summarize === 'create' ? m.generateSummary : m.regenerateSummary) : '',
+    vm.writeActions?.editMeta ? button('editMeta', m.editMetaTitle, m.editMeta) : '',
+    vm.writeActions?.deleteSummary ? button('deleteSummary', m.deleteSummaryTitle, m.deleteSummary) : '',
   ].join('');
   const abstract = vm.abstractHtml
-    ? `<section class="abstract"><details${vm.bodyHtml ? '' : ' open'}><summary>초록 (Abstract)</summary><div class="abstract-body">${vm.abstractHtml}</div></details></section>`
+    ? `<section class="abstract"><details${vm.bodyHtml ? '' : ' open'}><summary>${escapeHtml(m.abstract)}</summary><div class="abstract-body">${vm.abstractHtml}</div></details></section>`
     : '';
   const body = vm.bodyHtml ? `<article class="markdown-body">${vm.bodyHtml}</article>` : '';
 
   return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${currentLanguage()}">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy(res.cspSource, res.nonce)}">
@@ -147,13 +146,13 @@ export function buildPaperHtml(vm: PaperViewModel, res: WebviewResources): strin
 <body data-paper-id="${escapeHtml(vm.id)}">
   <header class="paper-header">
     <div class="toolbar">
-      <button type="button" class="link" data-action="revealTopic" title="트리에서 주제 보기">${escapeHtml(vm.topicLabel)}</button>
+      <button type="button" class="link" data-action="revealTopic" title="${escapeHtml(m.revealTopicTitle)}">${escapeHtml(vm.topicLabel)}</button>
       <span class="spacer"></span>
       ${openButton}
       ${localButton}
-      <button type="button" data-action="copyInfo" title="제목, 저자, 연도, URL 복사">정보 복사</button>
+      ${button('copyInfo', m.copyInfoTitle, m.copyInfo)}
       ${writeButtons}
-      <button type="button" data-action="reload" title="이 논문을 다시 읽기">⟳ Reload</button>
+      ${button('reload', m.reloadTitle, '⟳ Reload')}
     </div>
     <h1 class="paper-title">${escapeHtml(vm.title)}</h1>
     ${authorsLine(vm.authors)}

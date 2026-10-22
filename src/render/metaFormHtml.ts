@@ -1,5 +1,6 @@
 // 메타 정보 입력 폼 HTML 템플릿 (vscode 비의존). 값은 모두 여기서 이스케이프한다.
 import type { MetaFormValues } from '../data/metaForm';
+import { currentLanguage, t } from '../i18n';
 import { contentSecurityPolicy, escapeHtml, scriptTags, type WebviewResources } from './html';
 
 export interface MetaFormViewModel {
@@ -11,10 +12,10 @@ export interface MetaFormViewModel {
   values: MetaFormValues;
 }
 
-const SOURCES: { value: string; label: string }[] = [
-  { value: 'arxiv', label: 'arxiv — arXiv 논문 (URL은 abs 주소)' },
-  { value: 'pdf', label: 'pdf — PDF URL로 추가한 논문 (URL 필수)' },
-  { value: 'manual', label: 'manual — 직접 입력한 논문 (URL은 참고용)' },
+const sources = (): { value: string; label: string }[] => [
+  { value: 'arxiv', label: t().metaForm.sourceArxiv },
+  { value: 'pdf', label: t().metaForm.sourcePdf },
+  { value: 'manual', label: t().metaForm.sourceManual },
 ];
 
 function field(name: keyof MetaFormValues, label: string, control: string, hint = ''): string {
@@ -34,16 +35,17 @@ const input = (name: keyof MetaFormValues, value: string, extra = '') =>
 export function buildMetaFormHtml(vm: MetaFormViewModel, res: WebviewResources): string {
   const styles = res.styleUris.map((u) => `<link rel="stylesheet" href="${escapeHtml(u)}">`).join('\n  ');
   const v = vm.values;
-  const options = SOURCES.map(
+  const m = t().metaForm;
+  const options = sources().map(
     (s) => `<option value="${s.value}"${s.value === v.source ? ' selected' : ''}>${escapeHtml(s.label)}</option>`,
   ).join('');
   const paperIdField =
     vm.mode === 'add'
-      ? field('paperId', '파일 이름 (선택)', input('paperId', v.paperId, 'placeholder="예: korean_paper_2024"'), '파일 이름은 제목으로 자동으로 만든다. 제목에 영문이나 숫자가 하나도 없을 때만 입력한다 (a-z, 0-9, _).')
+      ? field('paperId', m.paperId, input('paperId', v.paperId, `placeholder="${escapeHtml(m.paperIdPlaceholder)}"`), m.paperIdHint)
       : '';
 
   return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${currentLanguage()}">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy(res.cspSource, res.nonce)}">
@@ -56,19 +58,19 @@ export function buildMetaFormHtml(vm: MetaFormViewModel, res: WebviewResources):
   ${vm.subheading ? `<p class="form-subtitle">${escapeHtml(vm.subheading)}</p>` : ''}
   <div class="notice notice-error" id="message" role="alert" hidden></div>
   <form id="meta-form" novalidate>
-    ${field('title', '제목 *', input('title', v.title))}
-    ${field('authors', '저자 *', input('authors', v.authors), '쉼표로 구분한다. 예: Wei-Yu Chen, Yen-Cheng Liu')}
+    ${field('title', m.title, input('title', v.title))}
+    ${field('authors', m.authors, input('authors', v.authors), m.authorsHint)}
     <div class="row">
-      ${field('year', '연도 *', input('year', v.year, 'inputmode="numeric" maxlength="4"'))}
-      ${field('citation', '인용 수', input('citation', v.citation, 'inputmode="numeric"'), '모르면 비워 둔다.')}
+      ${field('year', m.year, input('year', v.year, 'inputmode="numeric" maxlength="4"'))}
+      ${field('citation', m.citation, input('citation', v.citation, 'inputmode="numeric"'), m.citationHint)}
     </div>
-    ${field('source', '출처', `<select id="f-source" name="source">${options}</select>`)}
+    ${field('source', m.source, `<select id="f-source" name="source">${options}</select>`)}
     ${field('url', 'URL', input('url', v.url, 'placeholder="https://"'))}
-    ${field('abstract', '초록', `<textarea id="f-abstract" name="abstract" rows="10">${escapeHtml(v.abstract)}</textarea>`)}
+    ${field('abstract', m.abstract, `<textarea id="f-abstract" name="abstract" rows="10">${escapeHtml(v.abstract)}</textarea>`)}
     ${paperIdField}
     <div class="toolbar actions">
-      <button type="submit" class="primary" id="save">저장</button>
-      <button type="button" id="cancel">취소</button>
+      <button type="submit" class="primary" id="save">${escapeHtml(m.save)}</button>
+      <button type="button" id="cancel">${escapeHtml(m.cancel)}</button>
     </div>
   </form>
   ${scriptTags(res)}

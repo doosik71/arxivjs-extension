@@ -24,6 +24,8 @@ export interface ArxivjsConfig {
   geminiModel: string;
   ollamaUrl: string;
   ollamaModel: string;
+  /** UI 표시 언어 설정값: 'auto' | 'en' | 'ko' (기본 'en'). 실제 언어는 i18n.resolveLanguage로 정한다. */
+  language: string;
 }
 
 export type PaperPanelLocation = 'sameGroup' | 'beside';
@@ -46,6 +48,7 @@ export function readConfig(): ArxivjsConfig {
     geminiModel: (c.get<string>('gemini.model') ?? '').trim() || 'gemini-2.5-flash',
     ollamaUrl: (c.get<string>('ollama.url') ?? '').trim() || 'http://localhost:11434',
     ollamaModel: (c.get<string>('ollama.model') ?? '').trim(),
+    language: c.get<string>('language') ?? 'en',
   };
 }
 

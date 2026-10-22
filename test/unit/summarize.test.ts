@@ -57,9 +57,9 @@ describe('프롬프트', () => {
 
   it('userprompt.txt가 없거나 {context}가 없으면 알린다', async () => {
     removeTempFile(data, 'userprompt.txt');
-    await expect(readPromptTemplate(ctx)).rejects.toThrow(/userprompt\.txt이 없습니다/);
+    await expect(readPromptTemplate(ctx)).rejects.toThrow(/userprompt\.txt is not in the data folder/);
     putFile(data, 'userprompt.txt', 'no placeholder');
-    await expect(readPromptTemplate(ctx)).rejects.toThrow(/\{context\}가 없습니다/);
+    await expect(readPromptTemplate(ctx)).rejects.toThrow(/does not contain \{context\}/);
   });
 });
 
@@ -86,7 +86,7 @@ describe('summarizePaper (임시 복사본)', () => {
 
   it('LLM 오류나 빈 응답이면 .md를 만들지 않는다 (.txt는 남는다)', async () => {
     await expect(summarizePaper(ctx, topic(), paper(), options(fakeNetwork(new Error('model not found')).fetch))).rejects.toThrow(/model not found/);
-    await expect(summarizePaper(ctx, topic(), paper(), options(fakeNetwork(['  ']).fetch))).rejects.toThrow(/비어 있습니다/);
+    await expect(summarizePaper(ctx, topic(), paper(), options(fakeNetwork(['  ']).fetch))).rejects.toThrow(/response is empty/);
     expect(existsSync(at('Few-Shot_Learning', `${STEM}.md`))).toBe(false);
     expect(existsSync(at('Few-Shot_Learning', `${STEM}.txt`))).toBe(true);
   });

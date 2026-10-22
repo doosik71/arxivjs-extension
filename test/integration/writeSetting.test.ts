@@ -89,7 +89,7 @@ suite('쓰기 설정', () => {
     assert.doesNotMatch(html(), /data-action="editMeta"/);
     await setConfig('enableWrite', true);
     await waitFor(() => /data-action="editMeta"/.test(html()) && /data-action="deleteSummary"/.test(html()), '쓰기를 켠 뒤 버튼이 나타나지 않았다');
-    assert.match(html(), /data-action="summarize"[^>]*>요약 다시 생성</);
+    assert.match(html(), /data-action="summarize"[^>]*>Regenerate Summary</);
     await setConfig('enableWrite', false);
     await waitFor(() => !/data-action="editMeta"/.test(html()), '쓰기를 끈 뒤 버튼이 사라지지 않았다');
   });

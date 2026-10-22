@@ -212,16 +212,16 @@ suite('쓰기 흐름 (임시 복사본)', () => {
     const before = readFileSync(at(RL, `${ARXIV_STEM}.json`), 'utf8');
     ui.picks.push((items) => items.find((i) => i.id === 'id'));
     ui.inputs.push('1904.04232');
-    ui.confirms.push('건너뛰기');
+    ui.confirms.push('Skip');
     await vscode.commands.executeCommand('arxivjs.addPaper', { kind: 'topic', topic: await topic(RL) });
     assert.strictEqual(readFileSync(at(RL, `${ARXIV_STEM}.json`), 'utf8'), before);
-    assert.ok(ui.messages.some((m) => m.includes('1편은 건너뛰었습니다')));
+    assert.ok(ui.messages.some((m) => m.includes('skipped 1')));
   });
 
   test('직접 입력으로 논문 추가 (메타 정보 폼)', async () => {
     ui.picks.push((items) => items.find((i) => i.id === 'manual'));
     await vscode.commands.executeCommand('arxivjs.addPaper', { kind: 'topic', topic: await topic('Autoencoder') });
-    assert.match(api.metaEditor.html ?? '', /논문 추가 — Autoencoder/);
+    assert.match(api.metaEditor.html ?? '', /Add Paper — Autoencoder/);
     const values = { title: '수동 입력 논문', authors: 'Kim, Lee', year: '2025', url: '', abstract: '', citation: '', source: 'manual', paperId: 'manual_paper' };
     await api.metaEditor.handleMessage({ type: 'submit', values: { ...values, year: '25' } }); // 검사 실패 → 저장 안 함
     assert.strictEqual(existsSync(at('Autoencoder', 'manual_paper.json')), false);
@@ -263,7 +263,7 @@ suite('쓰기 흐름 (임시 복사본)', () => {
   });
 
   test('요약 삭제: .md를 지우고 .bak을 남기지 않는다', async () => {
-    ui.confirms.push('삭제');
+    ui.confirms.push('Delete');
     await vscode.commands.executeCommand('arxivjs.deleteSummary', await target(RL, ARXIV_STEM));
     assert.deepStrictEqual(files(RL, ARXIV_STEM), [`${ARXIV_STEM}.json`, `${ARXIV_STEM}.txt`]);
   });
@@ -279,27 +279,27 @@ suite('쓰기 흐름 (임시 복사본)', () => {
   test('논문 이동: 대상에 같은 논문이 있으면 묻고 형식 명세 §9.3대로 처리한다', async () => {
     // Cosine_Similarity에 같은 파일 이름의 논문이 있다. 날짜가 없으므로 대상을 남기고 원본을 지운다.
     ui.picks.push((items) => items.find((i) => (i.topic as Topic | undefined)?.id === 'Cosine_Similarity'));
-    ui.confirms.push('계속');
+    ui.confirms.push('Continue');
     await vscode.commands.executeCommand('arxivjs.movePaper', await target(RL_RENAMED, ARXIV_STEM));
     assert.deepStrictEqual(readdirSync(at(RL_RENAMED)), []);
     assert.ok(existsSync(at('Cosine_Similarity', `${ARXIV_STEM}.txt`)), '대상에 없던 .txt는 옮긴다');
-    assert.ok(ui.messages.some((m) => m.includes('기존 논문을 남기고')));
+    assert.ok(ui.messages.some((m) => m.includes('Kept the existing paper')));
   });
 
   test('주제 삭제: 비어 있지 않으면 지우지 않고, 비어 있으면 확인 후 지운다', async () => {
     await vscode.commands.executeCommand('arxivjs.deleteTopic', { kind: 'topic', topic: await topic('Broken_Data') });
     assert.ok(existsSync(at('Broken_Data')));
-    const refused = ui.messages.find((m) => m.includes('비어 있지 않아'));
+    const refused = ui.messages.find((m) => m.includes('is not empty and cannot be deleted'));
     assert.ok(refused?.startsWith('ERROR '));
     ui.messages.length = 0; // 의도한 오류 알림
 
-    ui.confirms.push('삭제');
+    ui.confirms.push('Delete');
     await vscode.commands.executeCommand('arxivjs.deleteTopic', { kind: 'topic', topic: await topic(RL_RENAMED) });
     assert.strictEqual(existsSync(at(RL_RENAMED)), false);
   });
 
   test('논문 삭제: .json, .md, .hlt, .txt를 지우고 백업은 남긴다', async () => {
-    ui.confirms.push('삭제');
+    ui.confirms.push('Delete');
     await vscode.commands.executeCommand('arxivjs.deletePaper', await target('Broken_Data', 'valid_paper'));
     assert.deepStrictEqual(files('Broken_Data', 'valid_paper'), ['valid_paper.bak', 'valid_paper.md.bak']);
   });
@@ -309,7 +309,7 @@ suite('쓰기 흐름 (임시 복사본)', () => {
     await vscode.commands.executeCommand('arxivjs.createTopic'); // 입력 창을 띄우지 않고 안내만 한다.
     await vscode.commands.executeCommand('arxivjs.deletePaper', await target('Autoencoder', 'manual_paper'));
     assert.ok(existsSync(at('Autoencoder', 'manual_paper.json')));
-    assert.ok(ui.messages.every((m) => m.includes('쓰기 기능이 꺼져 있습니다')));
+    assert.ok(ui.messages.every((m) => m.includes('write support is off')));
     await setConfig('enableWrite', true);
   });
 });

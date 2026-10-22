@@ -9,6 +9,9 @@
   const visibleEl = document.getElementById('visible');
   const emptyEl = document.getElementById('empty');
   const numberFormat = new Intl.NumberFormat('en-US');
+  // 표시 문자열 템플릿 (확장의 설정 arxivjs.language). "{name}"을 바꾼다 (src/i18n/index.ts의 fmt와 같은 규칙).
+  const strings = data.strings;
+  const fmt = (template, vars) => template.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m));
 
   // 같은 데이터 폴더를 다시 그릴 때(Reload) 필터·정렬·스크롤을 유지한다.
   const saved = vscode.getState();
@@ -53,10 +56,8 @@
     const total = items.reduce((sum, it) => sum + (it.topic.count || 0), 0);
     summaryEl.textContent =
       items.length === 0
-        ? '주제 0개'
-        : countsDone
-          ? `주제 ${items.length}개 · 논문 ${numberFormat.format(total)}편`
-          : `주제 ${items.length}개 · 논문 수 세는 중…`;
+        ? strings.summaryZero
+        : fmt(countsDone ? strings.summaryDone : strings.summaryCounting, { topics: items.length, papers: numberFormat.format(total) });
   }
 
   let resortTimer;
@@ -95,7 +96,7 @@
       fragment.append(it.li);
     }
     listEl.append(fragment);
-    visibleEl.textContent = shown.size === items.length ? '' : `${shown.size} / ${items.length}개`;
+    visibleEl.textContent = shown.size === items.length ? '' : fmt(strings.visible, { shown: shown.size, total: items.length });
     emptyEl.hidden = shown.size > 0 || items.length === 0;
     for (const b of document.querySelectorAll('.sort')) {
       const active = b.dataset.sort === state.sort;

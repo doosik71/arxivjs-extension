@@ -1,5 +1,6 @@
 // Topic 패널 HTML 템플릿 (vscode 비의존). 표는 webview 스크립트가 JSON 데이터로 그린다.
 import type { Paper, PaperSort } from '../data/models';
+import { currentLanguage, fmt, t } from '../i18n';
 import { countAuthors } from '../views/format';
 import { contentSecurityPolicy, escapeHtml, scriptTags, type Notice, type WebviewResources } from './html';
 
@@ -61,10 +62,11 @@ export function jsonForScript(value: unknown): string {
 export function buildTopicHtml(vm: TopicViewModel, res: WebviewResources): string {
   const styles = res.styleUris.map((u) => `<link rel="stylesheet" href="${escapeHtml(u)}">`).join('\n  ');
   const notices = vm.notices.map((n) => `<div class="notice notice-${n.kind}" role="status">${escapeHtml(n.text)}</div>`).join('');
-  const data = { topicId: vm.topicId, defaultSort: vm.defaultSort, rows: vm.rows };
+  const m = t().topic;
+  const data = { topicId: vm.topicId, defaultSort: vm.defaultSort, rows: vm.rows, strings: m.script };
 
   return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${currentLanguage()}">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy(res.cspSource, res.nonce)}">
@@ -76,29 +78,29 @@ export function buildTopicHtml(vm: TopicViewModel, res: WebviewResources): strin
   <header class="topic-header">
     <div class="toolbar">
       <h1 class="topic-title">${escapeHtml(vm.topicLabel)}</h1>
-      <span class="count" id="count" aria-live="polite">${vm.rows.length}편</span>
+      <span class="count" id="count" aria-live="polite">${escapeHtml(fmt(m.script.count, { n: vm.rows.length }))}</span>
       <span class="spacer"></span>
-      ${vm.canWrite ? '<button type="button" data-action="addPaper" title="이 주제에 논문 추가">+ 논문 추가</button>' : ''}
-      <button type="button" data-action="reload" title="이 주제의 논문 목록을 다시 읽기">⟳ Reload</button>
+      ${vm.canWrite ? `<button type="button" data-action="addPaper" title="${escapeHtml(m.addPaperTitle)}">${escapeHtml(m.addPaper)}</button>` : ''}
+      <button type="button" data-action="reload" title="${escapeHtml(m.reloadTitle)}">⟳ Reload</button>
     </div>
     <div class="toolbar filters">
-      <input type="search" id="filter" placeholder="제목, 저자로 필터" aria-label="논문 필터" autocomplete="off">
-      <label class="check"><input type="checkbox" id="onlyMarkdown"> 요약 문서 있는 것만</label>
+      <input type="search" id="filter" placeholder="${escapeHtml(m.filterPlaceholder)}" aria-label="${escapeHtml(m.filterLabel)}" autocomplete="off">
+      <label class="check"><input type="checkbox" id="onlyMarkdown"> ${escapeHtml(m.onlyMarkdown)}</label>
     </div>
   </header>
   ${notices}
-  <table class="papers" aria-label="${escapeHtml(vm.topicLabel)} 논문 목록">
+  <table class="papers" aria-label="${escapeHtml(m.tableLabel(vm.topicLabel))}">
     <thead>
       <tr>
-        <th class="col-title"><button type="button" class="sort" data-sort="title">제목</button></th>
-        <th class="col-year"><button type="button" class="sort" data-sort="year">연도</button></th>
-        <th class="col-citation"><button type="button" class="sort" data-sort="citation">인용</button></th>
-        <th class="col-actions"><span class="visually-hidden">동작</span></th>
+        <th class="col-title"><button type="button" class="sort" data-sort="title">${escapeHtml(m.colTitle)}</button></th>
+        <th class="col-year"><button type="button" class="sort" data-sort="year">${escapeHtml(m.colYear)}</button></th>
+        <th class="col-citation"><button type="button" class="sort" data-sort="citation">${escapeHtml(m.colCitation)}</button></th>
+        <th class="col-actions"><span class="visually-hidden">${escapeHtml(m.colActions)}</span></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
   </table>
-  <p class="empty" id="empty" hidden>조건에 맞는 논문이 없습니다.</p>
+  <p class="empty" id="empty" hidden>${escapeHtml(m.empty)}</p>
   <script id="topic-data" type="application/json">${jsonForScript(data)}</script>
   ${scriptTags(res)}
 </body>

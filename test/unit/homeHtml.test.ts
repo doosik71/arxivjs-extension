@@ -35,9 +35,9 @@ describe('buildHomeHtml', () => {
   });
 
   it('요약: 논문 수를 아직 모르는 주제가 있으면 "세는 중", 모두 알면 합계', () => {
-    expect(buildHomeHtml(vm(), res)).toContain('주제 3개 · 논문 수 세는 중…');
+    expect(buildHomeHtml(vm(), res)).toContain('Topics: 3 · counting papers…');
     const known = vm({ rows: [{ id: 'A', label: 'A', count: 87 }, { id: 'B', label: 'B', count: 1200 }] });
-    expect(buildHomeHtml(known, res)).toContain('주제 2개 · 논문 1,287편');
+    expect(buildHomeHtml(known, res)).toContain('Topics: 2 · Papers: 1,287');
   });
 
   it('첫 화면용 데이터에는 논문 수가 없어도 된다 (비동기로 채운다)', () => {
@@ -82,8 +82,8 @@ describe('homeSummary', () => {
   ];
 
   it('다 세기 전/후', () => {
-    expect(homeSummary(rows, false)).toBe('주제 2개 · 논문 수 세는 중…');
-    expect(homeSummary(rows, true)).toBe('주제 2개 · 논문 3편');
-    expect(homeSummary([], true)).toBe('주제 0개');
+    expect(homeSummary(rows, false)).toBe('Topics: 2 · counting papers…');
+    expect(homeSummary(rows, true)).toBe('Topics: 2 · Papers: 3');
+    expect(homeSummary([], true)).toBe('Topics: 0');
   });
 });

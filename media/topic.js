@@ -9,6 +9,9 @@
   const countEl = document.getElementById('count');
   const emptyEl = document.getElementById('empty');
   const numberFormat = new Intl.NumberFormat('en-US');
+  // 표시 문자열 템플릿 (확장의 설정 arxivjs.language). "{name}"을 바꾼다 (src/i18n/index.ts의 fmt와 같은 규칙).
+  const strings = data.strings;
+  const fmt = (template, vars) => template.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m));
   const model = window.ArxivjsTopicModel; // media/topicModel.js (정렬·필터 규칙)
 
   // 같은 주제를 다시 그릴 때(Reload) 정렬·필터·스크롤·펼친 초록을 유지한다.
@@ -43,13 +46,13 @@
   function authorsLine(row) {
     const tooltip =
       row.authors.length > AUTHORS_TOOLTIP_CHARS
-        ? `${row.authors.slice(0, AUTHORS_TOOLTIP_CHARS)}… (총 ${numberFormat.format(row.authorCount)}명)`
+        ? `${row.authors.slice(0, AUTHORS_TOOLTIP_CHARS)}… ${fmt(strings.authorsTotal, { n: numberFormat.format(row.authorCount) })}`
         : row.authors;
     return el(
       'div',
       { class: 'authors', title: tooltip },
       el('span', { class: 'authors-text', text: row.authors }),
-      el('span', { class: 'authors-count', text: `(${numberFormat.format(row.authorCount)}명)` }),
+      el('span', { class: 'authors-count', text: fmt(strings.authorsCount, { n: numberFormat.format(row.authorCount) }) }),
     );
   }
 
@@ -57,17 +60,17 @@
     const titleCell = el(
       'td',
       { class: 'col-title' },
-      el('button', { type: 'button', class: 'link title', 'data-action': 'openPaper', text: row.title, title: '논문 열기' }),
+      el('button', { type: 'button', class: 'link title', 'data-action': 'openPaper', text: row.title, title: strings.openPaper }),
       row.source ? el('span', { class: `badge source-${row.source.toLowerCase()}`, text: row.source }) : null,
-      row.metaError ? el('span', { class: 'tag tag-warning', text: '메타 오류', title: '메타 정보(.json)를 읽지 못했습니다' }) : null,
-      row.hasMarkdown ? null : el('span', { class: 'tag', text: '문서 없음' }),
+      row.metaError ? el('span', { class: 'tag tag-warning', text: strings.metaErrorTag, title: strings.metaErrorTitle }) : null,
+      row.hasMarkdown ? null : el('span', { class: 'tag', text: strings.noDocument }),
       row.authors ? authorsLine(row) : null,
     );
     const actions = el(
       'td',
       { class: 'col-actions' },
-      row.hasAbstract ? el('button', { type: 'button', 'data-action': 'toggleAbstract', 'aria-expanded': 'false', text: '초록' }) : null,
-      row.hasUrl ? el('button', { type: 'button', 'data-action': 'openExternal', text: '원문', title: '원문 URL 열기' }) : null,
+      row.hasAbstract ? el('button', { type: 'button', 'data-action': 'toggleAbstract', 'aria-expanded': 'false', text: strings.abstract }) : null,
+      row.hasUrl ? el('button', { type: 'button', 'data-action': 'openExternal', text: strings.original, title: strings.originalTitle }) : null,
     );
     const tr = el(
       'tr',
@@ -109,7 +112,8 @@
       fragment.append(it.tr, it.abstractRow);
     }
     rowsEl.append(fragment);
-    countEl.textContent = visible === items.length ? `${items.length}편` : `${visible} / ${items.length}편`;
+    countEl.textContent =
+      visible === items.length ? fmt(strings.count, { n: items.length }) : fmt(strings.countFiltered, { visible, total: items.length });
     emptyEl.hidden = visible > 0 || items.length === 0;
     markTruncatedAuthors();
     for (const th of document.querySelectorAll('th')) {
@@ -128,7 +132,7 @@
     if (open) {
       expanded.add(it.row.id);
       if (!it.loaded) {
-        it.abstractBody.textContent = '불러오는 중…';
+        it.abstractBody.textContent = strings.loading;
         vscode.postMessage({ type: 'abstract', id: it.row.id });
       }
     } else {

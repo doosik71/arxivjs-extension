@@ -19,7 +19,7 @@ export function createPdfWorkerExtractor(workerPath: string): PdfTextExtractor {
         reject(err);
       });
       // 결과를 보낸 뒤의 종료라면 이미 끝난 Promise라서 아무 일도 없다.
-      worker.once('exit', (code) => reject(new Error(`PDF 추출 작업자가 응답 없이 끝났습니다 (exit ${code})`)));
+      worker.once('exit', (code) => reject(new Error(`the PDF extraction worker exited without a response (exit ${code})`)));
       worker.postMessage(data);
     });
 }

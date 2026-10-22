@@ -1,8 +1,8 @@
 {
   "name": "arxivjs-viewer",
   "displayName": "ArxivJS VSCode Extension",
-  "description": "arxivjs 데이터 폴더의 논문을 VS Code에서 탐색한다.",
-  "version": "0.3.0",
+  "description": "Browse papers in an arxivjs data folder from VS Code.",
+  "version": "0.3.1",
   "publisher": "doosik71",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -42,7 +42,8 @@
       "arxivjs": [
         {
           "id": "arxivjs.topics",
-          "name": "Topics"
+          "name": "Topics",
+          "icon": "media/arxivjs.svg"
         }
       ]
     },
@@ -50,17 +51,17 @@
       {
         "view": "arxivjs.topics",
         "when": "arxivjs.state == noFolder",
-        "contents": "arxivjs 데이터 폴더가 설정되지 않았습니다.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n선택한 경로는 설정 arxivjs.dataFolder에 저장됩니다."
+        "contents": "No arxivjs data folder is set.\n[Select Data Folder](command:arxivjs.selectDataFolder)\nThe selected path is saved in the arxivjs.dataFolder setting."
       },
       {
         "view": "arxivjs.topics",
         "when": "arxivjs.state == invalidFolder",
-        "contents": "데이터 폴더를 열 수 없습니다.\n설정 arxivjs.dataFolder가 존재하는 폴더의 절대 경로인지 확인하세요.\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)\n[Reload](command:arxivjs.reload)"
+        "contents": "Cannot open the data folder.\nCheck that the arxivjs.dataFolder setting is the absolute path of an existing folder.\n[Select Data Folder](command:arxivjs.selectDataFolder)\n[Reload](command:arxivjs.reload)"
       },
       {
         "view": "arxivjs.topics",
         "when": "arxivjs.state == empty",
-        "contents": "데이터 폴더에 주제 폴더가 없습니다.\n주제 폴더 이름은 영문자, 숫자, 한글, 공백, _, (, ), - 만 쓸 수 있습니다.\n[Reload](command:arxivjs.reload)\n[데이터 폴더 선택](command:arxivjs.selectDataFolder)"
+        "contents": "The data folder has no topic folders.\nTopic folder names may contain only letters, digits, Hangul, spaces, _, (, ), and -.\n[Reload](command:arxivjs.reload)\n[Select Data Folder](command:arxivjs.selectDataFolder)"
       }
     ],
     "configuration": {
@@ -70,7 +71,22 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "arxivjs 데이터 폴더의 절대 경로."
+          "markdownDescription": "Absolute path to the arxivjs data folder."
+        },
+        "arxivjs.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "ko"
+          ],
+          "enumDescriptions": [
+            "Follow the VS Code display language (Korean if it is Korean, otherwise English)",
+            "English",
+            "Korean (한국어)"
+          ],
+          "default": "en",
+          "markdownDescription": "Display language of the extension's messages, tree, and panels. Reload the window to apply a change. Command titles and setting descriptions are always in English."
         },
         "arxivjs.paperSort": {
           "type": "string",
@@ -80,17 +96,17 @@
             "title"
           ],
           "enumDescriptions": [
-            "인용수 내림차순",
-            "연도 내림차순",
-            "제목 오름차순"
+            "Citation count, descending",
+            "Year, descending",
+            "Title, ascending"
           ],
           "default": "citation",
-          "description": "논문 목록 정렬 기준"
+          "description": "Sort order of the paper list"
         },
         "arxivjs.openInNewTab": {
           "type": "boolean",
           "default": true,
-          "description": "논문을 열 때마다 새 탭을 연다. false이면 논문 탭 하나를 재사용한다."
+          "description": "Open a new tab for each paper. If false, reuse a single paper tab."
         },
         "arxivjs.paperPanelLocation": {
           "type": "string",
@@ -99,21 +115,21 @@
             "beside"
           ],
           "enumDescriptions": [
-            "논문 목록(Topic 패널)과 같은 편집기 그룹에 탭으로 연다. 화면을 나누지 않는다.",
-            "논문 목록 옆에 편집기 그룹을 나눠서 연다. 목록과 논문을 함께 볼 수 있다."
+            "Open as a tab in the same editor group as the paper list (Topic panel). The editor is not split.",
+            "Open in an editor group beside the paper list, so the list and the paper are visible together."
           ],
           "default": "sameGroup",
-          "description": "논문을 열 편집기 그룹"
+          "description": "Editor group in which to open papers"
         },
         "arxivjs.openHomeOnStartup": {
           "type": "boolean",
           "default": true,
-          "description": "ArxivJS 뷰를 처음 열 때 주제 목록(홈) 페이지를 함께 연다."
+          "description": "Open the topic list (Home) page when the ArxivJS view is first opened."
         },
         "arxivjs.enableWrite": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "데이터 폴더 **쓰기 기능**을 켠다. 켜면 주제 추가·이름 변경·삭제 같은 명령이 나타나고, 확장이 데이터 폴더의 파일을 만들거나 바꾸거나 지운다. 끄면 읽기만 한다.\n\n⚠️ arxivjs 앱과 같은 파일을 동시에 고치지 않는다. 나중에 쓴 쪽이 남는다."
+          "markdownDescription": "Enable **write support** for the data folder. When on, commands such as adding, renaming, and deleting topics appear, and the extension creates, changes, or deletes files in the data folder. When off, it only reads.\n\n⚠️ Do not edit the same files with the arxivjs app at the same time. The last write wins."
         },
         "arxivjs.llm.engine": {
           "type": "string",
@@ -122,112 +138,112 @@
             "ollama"
           ],
           "enumDescriptions": [
-            "Google Gemini (API 키 필요: 명령 \"ArxivJS: Gemini API 키 설정\")",
-            "로컬 또는 원격 Ollama 서버"
+            "Google Gemini (requires an API key: command \"ArxivJS: Set Gemini API Key\")",
+            "Local or remote Ollama server"
           ],
           "default": "gemini",
-          "description": "AI 요약에 쓸 엔진"
+          "description": "Engine used for AI summaries"
         },
         "arxivjs.gemini.model": {
           "type": "string",
           "default": "gemini-2.5-flash",
-          "description": "Gemini 모델 이름. API 키는 설정이 아니라 OS 자격 증명 저장소(SecretStorage)에 저장한다."
+          "description": "Gemini model name. The API key is stored in the OS credential store (SecretStorage), not in settings."
         },
         "arxivjs.ollama.url": {
           "type": "string",
           "default": "http://localhost:11434",
           "scope": "machine",
-          "description": "Ollama 서버 주소"
+          "description": "Ollama server URL"
         },
         "arxivjs.ollama.model": {
           "type": "string",
           "default": "",
-          "description": "Ollama 모델 이름 (예: gemma4:31b)"
+          "description": "Ollama model name (e.g. gemma4:31b)"
         }
       }
     },
     "commands": [
       {
         "command": "arxivjs.createTopic",
-        "title": "주제 추가",
+        "title": "Add Topic",
         "category": "ArxivJS",
         "icon": "$(add)"
       },
       {
         "command": "arxivjs.renameTopic",
-        "title": "주제 이름 변경",
+        "title": "Rename Topic",
         "category": "ArxivJS",
         "icon": "$(edit)"
       },
       {
         "command": "arxivjs.deleteTopic",
-        "title": "주제 삭제",
+        "title": "Delete Topic",
         "category": "ArxivJS",
         "icon": "$(trash)"
       },
       {
         "command": "arxivjs.addPaper",
-        "title": "논문 추가",
+        "title": "Add Paper",
         "category": "ArxivJS",
         "icon": "$(add)"
       },
       {
         "command": "arxivjs.editPaperMeta",
-        "title": "메타 정보 편집",
+        "title": "Edit Metadata",
         "category": "ArxivJS",
         "icon": "$(edit)"
       },
       {
         "command": "arxivjs.movePaper",
-        "title": "논문을 다른 주제로 이동",
+        "title": "Move Paper to Another Topic",
         "category": "ArxivJS",
         "icon": "$(arrow-swap)"
       },
       {
         "command": "arxivjs.deletePaper",
-        "title": "논문 삭제",
+        "title": "Delete Paper",
         "category": "ArxivJS",
         "icon": "$(trash)"
       },
       {
         "command": "arxivjs.deleteSummary",
-        "title": "요약 삭제",
+        "title": "Delete Summary",
         "category": "ArxivJS",
         "icon": "$(trash)"
       },
       {
         "command": "arxivjs.summarizePaper",
-        "title": "요약 생성",
+        "title": "Generate Summary",
         "category": "ArxivJS",
         "icon": "$(sparkle)"
       },
       {
         "command": "arxivjs.summarizeTopic",
-        "title": "요약 없는 논문 일괄 요약",
+        "title": "Summarize All Papers Without Summaries",
         "category": "ArxivJS",
         "icon": "$(sparkle)"
       },
       {
         "command": "arxivjs.setGeminiApiKey",
-        "title": "Gemini API 키 설정",
+        "title": "Set Gemini API Key",
         "category": "ArxivJS",
         "icon": "$(key)"
       },
       {
         "command": "arxivjs.clearGeminiApiKey",
-        "title": "Gemini API 키 삭제",
+        "title": "Delete Gemini API Key",
         "category": "ArxivJS",
         "icon": "$(key)"
       },
       {
         "command": "arxivjs.openHome",
-        "title": "주제 목록(홈) 열기",
+        "title": "Open Topic List (Home)",
         "category": "ArxivJS",
         "icon": "$(home)"
       },
       {
         "command": "arxivjs.selectDataFolder",
-        "title": "데이터 폴더 선택",
+        "title": "Select Data Folder",
         "category": "ArxivJS",
         "icon": "$(folder-opened)"
       },
@@ -245,19 +261,19 @@
       },
       {
         "command": "arxivjs.openSettings",
-        "title": "설정 열기",
+        "title": "Open Settings",
         "category": "ArxivJS",
         "icon": "$(gear)"
       },
       {
         "command": "arxivjs.openTopic",
-        "title": "주제 열기",
+        "title": "Open Topic",
         "category": "ArxivJS",
         "icon": "$(table)"
       },
       {
         "command": "arxivjs.openPaper",
-        "title": "논문 열기",
+        "title": "Open Paper",
         "category": "ArxivJS",
         "icon": "$(book)"
       },
@@ -269,13 +285,13 @@
       },
       {
         "command": "arxivjs.openExternal",
-        "title": "원문 URL 열기",
+        "title": "Open Original URL",
         "category": "ArxivJS",
         "icon": "$(link-external)"
       },
       {
         "command": "arxivjs.copyCitationInfo",
-        "title": "논문 정보 복사",
+        "title": "Copy Paper Info",
         "category": "ArxivJS",
         "icon": "$(copy)"
       }

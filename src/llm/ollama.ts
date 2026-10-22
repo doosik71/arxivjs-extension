@@ -1,4 +1,5 @@
 // Ollama REST (/api/generate, NDJSON 스트림). 키를 쓰지 않는다.
+import { t } from '../i18n';
 import { errorDetail, LlmError, readLines, type StreamOptions } from './common';
 
 interface OllamaChunk {
@@ -21,10 +22,10 @@ export async function* streamOllama(config: { url: string; model: string }, prom
     if (options.signal?.aborted) {
       throw err;
     }
-    throw new LlmError(`Ollama 서버(${base})에 연결하지 못했습니다. Ollama가 실행 중인지 확인하세요.`);
+    throw new LlmError(t().llm.ollamaConnect(base));
   }
   if (!res.ok || !res.body) {
-    throw new LlmError(`Ollama 요청 실패 (HTTP ${res.status}): ${await errorDetail(res)}`);
+    throw new LlmError(t().llm.ollamaHttp(res.status, await errorDetail(res)));
   }
   let done = false;
   for await (const line of readLines(res.body)) {
@@ -33,7 +34,7 @@ export async function* streamOllama(config: { url: string; model: string }, prom
     }
     const chunk = JSON.parse(line) as OllamaChunk;
     if (chunk.error) {
-      throw new LlmError(`Ollama 오류: ${chunk.error}`);
+      throw new LlmError(t().llm.ollamaError(chunk.error));
     }
     if (chunk.response) {
       yield chunk.response;
@@ -41,6 +42,6 @@ export async function* streamOllama(config: { url: string; model: string }, prom
     done ||= chunk.done === true;
   }
   if (!done) {
-    throw new LlmError('Ollama 응답이 끝나기 전에 연결이 끊겼습니다.');
+    throw new LlmError(t().llm.ollamaDisconnected);
   }
 }

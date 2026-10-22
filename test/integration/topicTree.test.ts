@@ -88,7 +88,7 @@ suite('Topics 트리', () => {
 
     assert.deepStrictEqual(
       items.map((i) => i.description),
-      ['2019 · 11', '2016 · 11', '2019 · 1 · 문서 없음'],
+      ['2019 · 11', '2016 · 11', '2019 · 1 · No document'],
     );
     assert.strictEqual(items[0].collapsibleState, vscode.TreeItemCollapsibleState.None);
     assert.strictEqual(items[2].contextValue, 'arxivjs.paper.noMarkdown');

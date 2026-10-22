@@ -65,7 +65,7 @@ suite('Paper 패널', () => {
   test('메타 헤더, 수식, 목차, CSP', async () => {
     const html = await open(await paperNode('Cosine_Similarity', 'a_closer_look_at_few_shot_classification'));
     assert.match(html, /<h1 class="paper-title">A Closer Look at Few-shot Classification<\/h1>/);
-    assert.match(html, /인용 2,737/);
+    assert.match(html, /Cited by 2,737/);
     assert.match(html, /class="katex"/);
     assert.match(html, /class="toc"/);
     assert.match(html, /Content-Security-Policy/);
@@ -88,8 +88,8 @@ suite('Paper 패널', () => {
 
   test('md가 없으면 안내와 펼친 초록', async () => {
     const html = await open(await paperNode('Few-Shot_Learning', 'domain_agnostic_few_shot_classification_by_learning_disparate_modulators'));
-    assert.match(html, /요약 문서\(\.md\)가 없습니다/);
-    assert.match(html, /<details open><summary>초록/);
+    assert.match(html, /No summary document \(\.md\)/);
+    assert.match(html, /<details open><summary>Abstract/);
     assert.ok(!html.includes('markdown-body'));
   });
 

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { isNotFound } from '../data/errors';
 import type { Library } from '../data/library';
 import type { Paper, PaperSort, Topic } from '../data/models';
+import { t } from '../i18n';
 import { createNonce, type Notice } from '../render/html';
 import { PaperRenderer } from '../render/markdown';
 import { buildTopicHtml, toTopicRow } from '../render/topicHtml';
@@ -124,7 +125,7 @@ export class TopicPanelManager implements vscode.Disposable {
       return;
     }
     if (msg.type === 'reload') {
-      this.log.info(`Reload: 주제 ${topic.id} (Topic 패널)`);
+      this.log.info(`Reload: topic ${topic.id} (Topic panel)`);
       this.host.reloadTopic(topic.id); // 캐시를 비우고 트리·패널을 다시 그리게 한다.
       return;
     }
@@ -167,10 +168,10 @@ export class TopicPanelManager implements vscode.Disposable {
       try {
         papers = await library.papers.list(topic);
       } catch (err) {
-        this.log.error(`주제를 읽지 못함: ${topic.id} — ${String(err)}`);
+        this.log.error(`Could not read the topic: ${topic.id} — ${String(err)}`);
         notices.push({
           kind: 'error',
-          text: isNotFound(err) ? '주제 폴더를 찾을 수 없습니다. Reload 하세요.' : '논문 목록을 읽지 못했습니다. 출력 채널 ArxivJS를 확인하세요.',
+          text: isNotFound(err) ? t().common.topicNotFound : t().common.paperListError,
         });
       }
     }

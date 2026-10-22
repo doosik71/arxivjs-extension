@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { Library } from '../data/library';
 import type { Topic } from '../data/models';
 import { buildHomeHtml } from '../render/homeHtml';
+import { t } from '../i18n';
 import { createNonce, type Notice } from '../render/html';
 import type { Logger } from '../util/logger';
 import { mapLimit } from '../util/mapLimit';
@@ -145,18 +146,18 @@ export class HomePanelManager implements vscode.Disposable {
     if (!library) {
       notices.push(
         this.host.configuredFolder()
-          ? { kind: 'error', text: '데이터 폴더 설정이 절대 경로가 아닙니다. "폴더 선택"으로 다시 지정하세요.' }
-          : { kind: 'info', text: '데이터 폴더가 설정되지 않았습니다. "폴더 선택"으로 arxivjs 데이터 폴더를 지정하세요.' },
+          ? { kind: 'error', text: t().home.folderNotAbsolute }
+          : { kind: 'info', text: t().home.folderNotSet },
       );
     } else {
       try {
         topics = await library.topics.list(); // 폴더 목록 한 번만 읽는다.
         if (topics.length === 0) {
-          notices.push({ kind: 'info', text: '데이터 폴더에 주제 폴더가 없습니다. 주제 폴더 이름은 영문자, 숫자, 한글, 공백, _, (, ), - 만 쓸 수 있습니다.' });
+          notices.push({ kind: 'info', text: t().home.noTopics });
         }
       } catch (err) {
-        this.log.error(`데이터 폴더를 읽지 못함: ${library.root} — ${String(err)}`);
-        notices.push({ kind: 'error', text: '데이터 폴더를 열 수 없습니다. 경로가 존재하는 폴더인지 확인하세요.' });
+        this.log.error(`Could not read the data folder: ${library.root} — ${String(err)}`);
+        notices.push({ kind: 'error', text: t().home.cannotOpenFolder });
       }
     }
 
@@ -199,7 +200,7 @@ export class HomePanelManager implements vscode.Disposable {
       try {
         count = await library.papers.count(topic);
       } catch (err) {
-        this.log.warn(`논문 수를 세지 못함: ${topic.id} — ${String(err)}`);
+        this.log.warn(`Could not count papers: ${topic.id} — ${String(err)}`);
         count = null;
       }
       if (stale()) {
@@ -219,7 +220,7 @@ export class HomePanelManager implements vscode.Disposable {
     }
     this.countsDone = true;
     await this.postCounts(pending, true);
-    this.log.info(`홈: 주제 ${topics.length}개의 논문 수를 셌다 (${Date.now() - started}ms)`);
+    this.log.info(`Home: counted papers in ${topics.length} topics (${Date.now() - started}ms)`);
   }
 
   private async postCounts(counts: ReadonlyMap<string, number | null>, done: boolean): Promise<void> {

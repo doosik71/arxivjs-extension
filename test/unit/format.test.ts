@@ -24,7 +24,7 @@ describe('paperDescription', () => {
   });
 
   it('md가 없으면 "문서 없음"', () => {
-    expect(paperDescription(paper({ year: 2019, citation: 1 }, { mdPath: undefined }))).toBe('2019 · 1 · 문서 없음');
+    expect(paperDescription(paper({ year: 2019, citation: 1 }, { mdPath: undefined }))).toBe('2019 · 1 · No document');
   });
 });
 
@@ -60,9 +60,9 @@ describe('paperTooltipLines', () => {
     const t = paperTooltipLines(paper({ authors: 'A, B', year: 2019, citation: 5, source: 'pdf', url: 'http://x', abstract: 'abs' }));
     expect(t.title).toBe('Title');
     expect(t.lines).toEqual([
-      { label: '저자', text: 'A, B' },
-      { label: '연도', text: '2019 · 인용 5' },
-      { label: '출처', text: 'pdf' },
+      { label: 'Authors', text: 'A, B' },
+      { label: 'Year', text: '2019 · Cited by 5' },
+      { label: 'Source', text: 'pdf' },
       { label: 'URL', text: 'http://x' },
     ]);
     expect(t.abstract).toBe('abs');
@@ -70,7 +70,7 @@ describe('paperTooltipLines', () => {
 
   it('md 없음, 메타 오류를 알린다', () => {
     const t = paperTooltipLines(paper({}, { mdPath: undefined, metaError: 'Unexpected end' }));
-    expect(t.lines.map((l) => l.text)).toEqual(['요약 문서(.md)가 없습니다.', '메타 정보를 읽지 못했습니다: Unexpected end']);
+    expect(t.lines.map((l) => l.text)).toEqual(['No summary document (.md).', 'Could not read metadata: Unexpected end']);
     expect(t.abstract).toBeUndefined();
   });
 });
@@ -101,14 +101,14 @@ describe('countAuthors / authorsPreview (저자가 아주 많은 논문)', () =>
   it('짧으면 그대로, 길면 자르고 전체 저자 수를 붙인다', () => {
     expect(authorsPreview('A, B')).toBe('A, B');
     const preview = authorsPreview(many);
-    expect(preview.length).toBeLessThan(AUTHORS_PREVIEW_CHARS + 20);
-    expect(preview).toMatch(/… \(총 1,351명\)$/);
+    expect(preview.length).toBeLessThan(AUTHORS_PREVIEW_CHARS + 30); // 끝에 붙는 " (1,351 authors total)"까지
+    expect(preview).toMatch(/… \(1,351 authors total\)$/);
     expect(preview.startsWith('Author 1, Author 2,')).toBe(true);
   });
 
   it('툴팁의 저자 줄도 줄인다', () => {
     const t = paperTooltipLines(paper({ authors: many }));
-    expect(t.lines[0].text).toMatch(/\(총 1,351명\)$/);
+    expect(t.lines[0].text).toMatch(/\(1,351 authors total\)$/);
   });
 
   it('정보 복사에는 저자를 모두 넣는다', () => {

@@ -160,7 +160,7 @@ export class PaperRepository {
       this.readPaper(topic, pair).catch((err) => {
         // readdir 이후 파일이 사라진 경우: 목록에서 빼고 넘어간다.
         if (isNotFound(err)) {
-          this.log.warn(`읽는 도중 파일이 사라짐: ${topic.id}/${pair.stem}`);
+          this.log.warn(`File disappeared while reading: ${topic.id}/${pair.stem}`);
           return undefined;
         }
         throw err;
@@ -180,7 +180,7 @@ export class PaperRepository {
         }
         return { ...base, meta: result.meta };
       }
-      this.log.warn(`메타 정보를 읽지 못함: ${base.id}.json — ${result.error}`);
+      this.log.warn(`Could not read metadata: ${base.id}.json — ${result.error}`);
       return { ...base, meta: await this.headerFallback(pair), metaError: result.error };
     }
     return { ...base, meta: await this.headerFallback(pair) };
@@ -213,7 +213,7 @@ export class PaperRepository {
         if (!(err instanceof DataError)) {
           throw err;
         }
-        this.log.warn(`md 헤더를 읽지 못함: ${pair.mdPath} — ${err.message}`);
+        this.log.warn(`Could not read md header: ${pair.mdPath} — ${err.message}`);
       }
     }
     return fallbackMeta(pair.stem, header);

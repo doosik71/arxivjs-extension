@@ -1,4 +1,5 @@
 // 메타 정보 입력 폼의 값 검사와 변환 (DEV-PLAN §6.6.3). vscode 비의존.
+import { t } from '../i18n';
 import type { PaperMeta } from './models';
 import { cleanText, isValidPaperId, slugifyPaperTitle } from './paperId';
 import { PAPER_SOURCES, type MetaPatch, type NewPaper, type PaperSource } from './paperOps';
@@ -50,32 +51,33 @@ export function parseMetaForm(values: MetaFormValues, mode: 'add' | 'edit'): Met
   const citationText = values.citation.trim();
   const source = values.source as PaperSource;
 
+  const m = t().metaForm;
   if (!title) {
-    errors.title = '제목을 입력하세요.';
+    errors.title = m.titleRequired;
   }
   if (!authors) {
-    errors.authors = '저자를 입력하세요. 여러 명이면 쉼표로 구분합니다.';
+    errors.authors = m.authorsRequired;
   }
   if (!/^\d{4}$/.test(yearText)) {
-    errors.year = '연도를 네 자리 숫자로 입력하세요.';
+    errors.year = m.yearInvalid;
   }
   if (!PAPER_SOURCES.includes(source)) {
-    errors.source = '출처를 고르세요.';
+    errors.source = m.sourceRequired;
   }
   if (url && !isHttpUrl(url)) {
-    errors.url = 'http:// 또는 https://로 시작하는 주소를 입력하세요.';
+    errors.url = m.urlInvalid;
   } else if (!url && source === 'pdf') {
-    errors.url = '출처가 pdf이면 PDF를 내려받을 수 있는 URL이 필요합니다.';
+    errors.url = m.pdfUrlRequired;
   }
   if (citationText && !/^\d+$/.test(citationText)) {
-    errors.citation = '인용 수는 0 이상의 정수입니다. 모르면 비워 둡니다.';
+    errors.citation = m.citationInvalid;
   }
 
   let paperId: string | undefined;
   if (mode === 'add' && title && !slugifyPaperTitle(title)) {
     paperId = values.paperId.trim();
     if (!isValidPaperId(paperId)) {
-      errors.paperId = '제목에 영문이나 숫자가 없습니다. 파일 이름을 a-z, 0-9, _로 입력하세요 (예: korean_paper_2024).';
+      errors.paperId = m.paperIdRequired;
     }
   }
 

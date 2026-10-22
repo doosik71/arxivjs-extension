@@ -87,7 +87,7 @@ describe('buildTopicHtml', () => {
   it('주제 이름은 이스케이프하고, 논문 수를 표시한다', () => {
     const html = buildTopicHtml(vm(), res);
     expect(html).toContain('<h1 class="topic-title">Few-Shot &lt;Learning&gt;</h1>');
-    expect(html).toContain('>1편</span>');
+    expect(html).toContain('>Papers: 1</span>');
   });
 
   it('스크립트는 순서대로 nonce를 붙여 넣는다 (모델 → 화면)', () => {
@@ -112,6 +112,6 @@ describe('buildTopicHtml', () => {
   it('안내 문구', () => {
     const html = buildTopicHtml(vm({ rows: [], notices: [{ kind: 'error', text: '주제 폴더를 찾을 수 없습니다.' }] }), res);
     expect(html).toContain('notice-error');
-    expect(html).toContain('>0편</span>');
+    expect(html).toContain('>Papers: 0</span>');
   });
 });

@@ -1,5 +1,6 @@
 // 트리·패널에 표시할 문자열 만들기 (vscode 비의존)
 import type { Paper } from '../data/models';
+import { t } from '../i18n';
 
 const numberFormat = new Intl.NumberFormat('en-US');
 
@@ -14,7 +15,7 @@ export function formatCitation(citation: number | undefined): string | undefined
 export function paperDescription(paper: Paper): string {
   const parts = [paper.meta.year?.toString(), formatCitation(paper.meta.citation)].filter(Boolean);
   if (!paper.mdPath) {
-    parts.push('문서 없음');
+    parts.push(t().common.noDocument);
   }
   return parts.join(' · ');
 }
@@ -45,7 +46,7 @@ export const AUTHORS_PREVIEW_CHARS = 300;
 /** 툴팁용 저자: 길면 자르고 전체 저자 수를 붙인다. 실데이터에는 저자가 1,351명(약 2만 자)인 논문도 있다. */
 export function authorsPreview(authors: string, max = AUTHORS_PREVIEW_CHARS): string {
   const short = ellipsize(authors, max);
-  return short.length < authors.replace(/\s+/g, ' ').trim().length ? `${short} (총 ${numberFormat.format(countAuthors(authors))}명)` : short;
+  return short.length < authors.replace(/\s+/g, ' ').trim().length ? t().tooltip.authorsTotal(short, countAuthors(authors)) : short;
 }
 
 export interface TooltipLine {
@@ -56,27 +57,28 @@ export interface TooltipLine {
 /** 논문 툴팁 내용 (렌더링은 뷰에서 이스케이프하며 한다) */
 export function paperTooltipLines(paper: Paper): { title: string; lines: TooltipLine[]; abstract?: string } {
   const { meta } = paper;
+  const m = t().tooltip;
   const lines: TooltipLine[] = [];
   if (meta.authors) {
-    lines.push({ label: '저자', text: authorsPreview(meta.authors) });
+    lines.push({ label: m.authors, text: authorsPreview(meta.authors) });
   }
-  const yearCite = [meta.year?.toString(), meta.citation !== undefined ? `인용 ${formatCitation(meta.citation)}` : undefined]
+  const yearCite = [meta.year?.toString(), meta.citation !== undefined ? t().common.citedBy(meta.citation) : undefined]
     .filter(Boolean)
     .join(' · ');
   if (yearCite) {
-    lines.push({ label: '연도', text: yearCite });
+    lines.push({ label: m.year, text: yearCite });
   }
   if (meta.source) {
-    lines.push({ label: '출처', text: meta.source });
+    lines.push({ label: m.source, text: meta.source });
   }
   if (meta.url) {
     lines.push({ label: 'URL', text: meta.url });
   }
   if (!paper.mdPath) {
-    lines.push({ text: '요약 문서(.md)가 없습니다.' });
+    lines.push({ text: m.noSummary });
   }
   if (paper.metaError) {
-    lines.push({ text: `메타 정보를 읽지 못했습니다: ${paper.metaError}` });
+    lines.push({ text: m.metaReadError(paper.metaError) });
   }
   return {
     title: meta.title,

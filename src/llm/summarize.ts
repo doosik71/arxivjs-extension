@@ -1,6 +1,7 @@
 // 논문 요약 생성 (DEV-PLAN §8.3, 형식 명세 §9.2. 단 .bak 백업은 만들지 않는다). vscode 비의존.
 import * as path from 'node:path';
 import { isNotFound } from '../data/errors';
+import { t } from '../i18n';
 import type { Paper, Topic } from '../data/models';
 import { readPaperMeta, writeSummary } from '../data/paperOps';
 import type { DataOpsContext } from '../data/topicOps';
@@ -37,12 +38,12 @@ export async function readPromptTemplate(ctx: DataOpsContext): Promise<string> {
     template = await ctx.fs.readText(path.join(ctx.root, PROMPT_FILE));
   } catch (err) {
     if (isNotFound(err)) {
-      throw new LlmError(`데이터 폴더에 ${PROMPT_FILE}이 없습니다. 요약 프롬프트를 이 파일에 쓰고, 논문 본문이 들어갈 자리에 ${PLACEHOLDER}를 넣으세요.`);
+      throw new LlmError(t().llm.promptMissing(PROMPT_FILE, PLACEHOLDER));
     }
     throw err;
   }
   if (!template.includes(PLACEHOLDER)) {
-    throw new LlmError(`${PROMPT_FILE}에 ${PLACEHOLDER}가 없습니다. 논문 본문이 들어갈 자리에 ${PLACEHOLDER}를 넣으세요.`);
+    throw new LlmError(t().llm.placeholderMissing(PROMPT_FILE, PLACEHOLDER));
   }
   return template;
 }
@@ -70,7 +71,7 @@ export async function summarizePaper(ctx: DataOpsContext, topic: Topic, paper: P
     options.onProgress?.('generate', markdown.length);
   }
   if (markdown.trim() === '') {
-    throw new LlmError('LLM 응답이 비어 있습니다.');
+    throw new LlmError(t().llm.emptyResponse);
   }
   options.signal?.throwIfAborted();
   await writeSummary(ctx, paper, topic, markdown);

@@ -53,7 +53,7 @@ describe('buildPaperHtml', () => {
     const html = buildPaperHtml(vm(), res);
     expect(html).toContain('<h1 class="paper-title">Before you &lt;think&gt;, monitor</h1>');
     expect(html).toContain('<span class="authors-text">A &amp; B</span>');
-    expect(html).toContain('인용 1,234');
+    expect(html).toContain('Cited by 1,234');
     expect(html).toContain('class="badge source-pdf">pdf</span>');
     for (const action of ['openExternal', 'copyInfo', 'reload', 'revealTopic']) {
       expect(html).toContain(`data-action="${action}"`);
@@ -66,8 +66,8 @@ describe('buildPaperHtml', () => {
     const html = buildPaperHtml(vm({ authors: many }), res);
     expect(html).toContain('<span class="authors-text">Author &lt;1&gt;, Author &lt;2&gt;');
     expect(html).toContain('Author &lt;1351&gt;</span>');
-    expect(html).toMatch(/<button type="button" class="link authors-toggle" data-toggle="authors"[^>]* hidden [^>]*>모두 보기 \(1,351명\)<\/button>/);
-    expect(html).toContain('data-less="접기"');
+    expect(html).toMatch(/<button type="button" class="link authors-toggle" data-toggle="authors"[^>]* hidden [^>]*>Show all \(1,351 authors\)<\/button>/);
+    expect(html).toContain('data-less="Collapse"');
   });
 
   it('저자가 없으면 저자 줄이 없다', () => {
@@ -91,7 +91,7 @@ describe('buildPaperHtml', () => {
     const local = html.indexOf('data-action="openLocal"');
     expect(external).toBeGreaterThan(0);
     expect(local).toBeGreaterThan(external);
-    expect(html).toContain('title="D:\\data\\T\\a &lt;b&gt;.md">로컬 문서 열기</button>');
+    expect(html).toContain('title="D:\\data\\T\\a &lt;b&gt;.md">Open Local Document</button>');
   });
 
   it('md가 없으면 "로컬 문서 열기" 버튼이 없다', () => {
@@ -103,9 +103,9 @@ describe('buildPaperHtml', () => {
   });
 
   it('본문이 없으면 초록을 펼쳐서 보여준다', () => {
-    expect(buildPaperHtml(vm(), res)).toContain('<details><summary>초록');
+    expect(buildPaperHtml(vm(), res)).toContain('<details><summary>Abstract');
     const noBody = buildPaperHtml(vm({ bodyHtml: undefined, headings: [] }), res);
-    expect(noBody).toContain('<details open><summary>초록');
+    expect(noBody).toContain('<details open><summary>Abstract');
     expect(noBody).not.toContain('markdown-body');
   });
 

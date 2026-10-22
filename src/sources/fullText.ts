@@ -2,6 +2,7 @@
 // .txt 캐시 → 없으면 source에 따라 PDF를 내려받아 텍스트를 뽑고 .txt로 저장한다. PDF 원본은 저장하지 않는다.
 import * as path from 'node:path';
 import { isNotFound } from '../data/errors';
+import { t } from '../i18n';
 import type { Paper, PaperMeta, Topic } from '../data/models';
 import type { DataOpsContext } from '../data/topicOps';
 import type { FetchFn } from './arxiv';
@@ -31,18 +32,18 @@ export async function downloadPdf(url: string, options: { fetch: FetchFn; signal
   const timeout = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
   const res = await options.fetch(url, { signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout });
   if (!res.ok) {
-    throw new FullTextError(`PDF를 내려받지 못했습니다 (HTTP ${res.status}): ${url}`);
+    throw new FullTextError(t().fullText.downloadFailed(res.status, url));
   }
   const length = Number(res.headers.get('content-length'));
   if (length > MAX_PDF_BYTES) {
-    throw new FullTextError(`PDF가 너무 큽니다 (${Math.round(length / 1024 / 1024)}MB): ${url}`);
+    throw new FullTextError(t().fullText.tooLargeMb(Math.round(length / 1024 / 1024), url));
   }
   const data = new Uint8Array(await res.arrayBuffer());
   if (data.byteLength > MAX_PDF_BYTES) {
-    throw new FullTextError(`PDF가 너무 큽니다: ${url}`);
+    throw new FullTextError(t().fullText.tooLarge(url));
   }
   if (new TextDecoder().decode(data.subarray(0, 5)) !== '%PDF-') {
-    throw new FullTextError(`받은 파일이 PDF가 아닙니다 (${res.headers.get('content-type') ?? '형식 모름'}): ${url}`);
+    throw new FullTextError(t().fullText.notPdf(res.headers.get('content-type') ?? t().fullText.unknownType, url));
   }
   return data;
 }
@@ -77,8 +78,8 @@ export async function getFullText(ctx: DataOpsContext, topic: Topic, paper: Pape
   if (!url) {
     throw new FullTextError(
       meta.source === 'manual'
-        ? '직접 추가한 논문(manual)은 전문 텍스트(.txt)가 있어야 요약할 수 있습니다.'
-        : '논문에 URL이 없어 PDF를 내려받을 수 없습니다.',
+        ? t().fullText.manualNeedsTxt
+        : t().fullText.noUrl,
     );
   }
   const data = await downloadPdf(url, options);
@@ -86,10 +87,10 @@ export async function getFullText(ctx: DataOpsContext, topic: Topic, paper: Pape
   try {
     text = await options.extract(data);
   } catch (err) {
-    throw new FullTextError(`PDF에서 텍스트를 뽑지 못했습니다: ${err instanceof Error ? err.message : String(err)}`);
+    throw new FullTextError(t().fullText.extractFailed(err instanceof Error ? err.message : String(err)));
   }
   if (text.trim() === '') {
-    throw new FullTextError('PDF에 텍스트가 없습니다 (스캔한 이미지 PDF일 수 있습니다).');
+    throw new FullTextError(t().fullText.noText);
   }
   await ctx.writer.writeTextAtomic(txtPath, text);
   return { text, fromCache: false };

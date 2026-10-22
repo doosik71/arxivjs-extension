@@ -92,7 +92,7 @@ async function query(params: URLSearchParams, fetchFn: FetchFn, signal?: AbortSi
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
   const res = await fetchFn(`${ARXIV_API}?${params}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   if (!res.ok) {
-    throw new Error(`arXiv API 응답 오류: HTTP ${res.status}`);
+    throw new Error(`arXiv API error: HTTP ${res.status}`);
   }
   return parseArxivFeed(await res.text());
 }

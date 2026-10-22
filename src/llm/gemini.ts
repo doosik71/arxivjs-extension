@@ -1,4 +1,5 @@
 // Gemini REST (streamGenerateContent, SSE). 키는 URL이 아니라 x-goog-api-key 헤더로 보낸다 (DEV-PLAN §8.2).
+import { t } from '../i18n';
 import { errorDetail, LlmError, readLines, type StreamOptions } from './common';
 
 export const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
@@ -25,7 +26,7 @@ export async function* streamGemini(
     signal: options.signal,
   });
   if (!res.ok || !res.body) {
-    throw new LlmError(`Gemini 요청 실패 (HTTP ${res.status}): ${await errorDetail(res)}`);
+    throw new LlmError(t().llm.geminiHttp(res.status, await errorDetail(res)));
   }
   for await (const line of readLines(res.body)) {
     if (!line.startsWith('data:')) {
@@ -33,10 +34,10 @@ export async function* streamGemini(
     }
     const chunk = JSON.parse(line.slice(5)) as GeminiChunk;
     if (chunk.error) {
-      throw new LlmError(`Gemini 오류: ${chunk.error.message ?? '알 수 없음'}`);
+      throw new LlmError(t().llm.geminiError(chunk.error.message ?? t().llm.unknown));
     }
     if (chunk.promptFeedback?.blockReason) {
-      throw new LlmError(`Gemini가 요청을 거부했습니다 (${chunk.promptFeedback.blockReason}).`);
+      throw new LlmError(t().llm.geminiBlocked(chunk.promptFeedback.blockReason));
     }
     const candidate = chunk.candidates?.[0];
     for (const part of candidate?.content?.parts ?? []) {
@@ -45,7 +46,7 @@ export async function* streamGemini(
       }
     }
     if (candidate?.finishReason && !OK_FINISH.has(candidate.finishReason)) {
-      throw new LlmError(`Gemini 응답이 중단되었습니다 (${candidate.finishReason}).`);
+      throw new LlmError(t().llm.geminiStopped(candidate.finishReason));
     }
   }
 }

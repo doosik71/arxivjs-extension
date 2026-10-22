@@ -1,4 +1,5 @@
 // 홈(주제 목록) 페이지 HTML 템플릿 (vscode 비의존). 목록은 webview 스크립트가 JSON 데이터로 그린다.
+import { currentLanguage, fmt, t } from '../i18n';
 import { contentSecurityPolicy, escapeHtml, scriptTags, type Notice, type WebviewResources } from './html';
 import { jsonForScript } from './topicHtml';
 
@@ -25,21 +26,23 @@ export interface HomeViewModel {
  * home.js에도 같은 규칙이 있다 (개수가 도착할 때마다 다시 쓴다).
  */
 export function homeSummary(rows: readonly HomeRow[], done: boolean): string {
+  const s = t().home.script;
   const total = rows.reduce((sum, r) => sum + (r.count ?? 0), 0);
   if (rows.length === 0) {
-    return '주제 0개';
+    return s.summaryZero;
   }
-  return done ? `주제 ${rows.length}개 · 논문 ${total.toLocaleString('en-US')}편` : `주제 ${rows.length}개 · 논문 수 세는 중…`;
+  return fmt(done ? s.summaryDone : s.summaryCounting, { topics: rows.length, papers: total.toLocaleString('en-US') });
 }
 
 export function buildHomeHtml(vm: HomeViewModel, res: WebviewResources): string {
   const styles = res.styleUris.map((u) => `<link rel="stylesheet" href="${escapeHtml(u)}">`).join('\n  ');
   const notices = vm.notices.map((n) => `<div class="notice notice-${n.kind}" role="status">${escapeHtml(n.text)}</div>`).join('');
   const summary = vm.folder ? homeSummary(vm.rows, vm.rows.every((r) => r.count !== undefined)) : '';
-  const data = { folder: vm.folder ?? '', rows: vm.rows };
+  const m = t().home;
+  const data = { folder: vm.folder ?? '', rows: vm.rows, strings: m.script };
 
   return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${currentLanguage()}">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy(res.cspSource, res.nonce)}">
@@ -50,26 +53,26 @@ export function buildHomeHtml(vm: HomeViewModel, res: WebviewResources): string 
 <body>
   <header class="home-header">
     <div class="toolbar">
-      <h1 class="home-title">ArxivJS 주제 목록</h1>
+      <h1 class="home-title">${escapeHtml(m.title)}</h1>
       <span class="count" id="summary">${escapeHtml(summary)}</span>
       <span class="spacer"></span>
-      ${vm.canWrite ? '<button type="button" data-action="createTopic" title="새 주제 폴더 만들기">+ 주제 추가</button>' : ''}
-      <button type="button" data-action="selectDataFolder" title="데이터 폴더 선택">폴더 선택</button>
-      <button type="button" data-action="reload" title="데이터 폴더를 다시 읽기">⟳ Reload</button>
+      ${vm.canWrite ? `<button type="button" data-action="createTopic" title="${escapeHtml(m.addTopicTitle)}">${escapeHtml(m.addTopic)}</button>` : ''}
+      <button type="button" data-action="selectDataFolder" title="${escapeHtml(m.selectFolderTitle)}">${escapeHtml(m.selectFolder)}</button>
+      <button type="button" data-action="reload" title="${escapeHtml(m.reloadTitle)}">⟳ Reload</button>
     </div>
-    ${vm.folder ? `<p class="folder" title="데이터 폴더">${escapeHtml(vm.folder)}</p>` : ''}
+    ${vm.folder ? `<p class="folder" title="${escapeHtml(m.folderTitle)}">${escapeHtml(vm.folder)}</p>` : ''}
     <div class="toolbar filters">
-      <input type="search" id="filter" placeholder="주제 이름으로 필터 (Enter: 첫 주제 열기)" aria-label="주제 필터" autocomplete="off">
-      <span class="sort-group" role="group" aria-label="정렬">
-        <button type="button" class="sort" data-sort="name">이름순</button>
-        <button type="button" class="sort" data-sort="count">논문 수순</button>
+      <input type="search" id="filter" placeholder="${escapeHtml(m.filterPlaceholder)}" aria-label="${escapeHtml(m.filterLabel)}" autocomplete="off">
+      <span class="sort-group" role="group" aria-label="${escapeHtml(m.sortLabel)}">
+        <button type="button" class="sort" data-sort="name">${escapeHtml(m.sortName)}</button>
+        <button type="button" class="sort" data-sort="count">${escapeHtml(m.sortCount)}</button>
       </span>
       <span class="count" id="visible" aria-live="polite"></span>
     </div>
   </header>
   ${notices}
-  <ul class="topics" id="topics" aria-label="주제 목록"></ul>
-  <p class="empty" id="empty" hidden>조건에 맞는 주제가 없습니다.</p>
+  <ul class="topics" id="topics" aria-label="${escapeHtml(m.listLabel)}"></ul>
+  <p class="empty" id="empty" hidden>${escapeHtml(m.empty)}</p>
   <script id="home-data" type="application/json">${jsonForScript(data)}</script>
   ${scriptTags(res)}
 </body>

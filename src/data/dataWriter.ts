@@ -5,6 +5,7 @@
 // 이 모듈도 호출될 때마다 설정을 다시 확인하고 꺼져 있으면 아무것도 쓰지 않는다.
 import { lstat, mkdir, rename, rm, rmdir, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
+import { t } from '../i18n';
 import { DataError, type DataErrorKind } from './errors';
 
 /** 데이터 계층이 의존하는 쓰기 인터페이스. 메서드 이름은 ESLint가 금지하는 fs API 이름과 겹치지 않게 지었다. */
@@ -64,13 +65,13 @@ export function createDataWriter({ root, isEnabled }: DataWriterOptions): DataWr
   /** 쓰기 허용 여부와 경로를 확인하고, 정규화한 절대 경로를 돌려준다. */
   const check = (p: string): string => {
     if (!isEnabled()) {
-      throw new DataError('writeDisabled', p, '데이터 폴더 쓰기가 꺼져 있다 (설정 arxivjs.enableWrite)');
+      throw new DataError('writeDisabled', p, 'data folder writes are disabled (setting arxivjs.enableWrite)');
     }
     const abs = path.resolve(p);
     const rel = path.relative(base, abs);
     const depth = rel.split(path.sep).length;
     if (!rel || rel.startsWith('..') || path.isAbsolute(rel) || depth > 2) {
-      throw new DataError('invalidPath', p, '데이터 폴더의 주제 폴더나 그 안의 파일만 쓸 수 있다');
+      throw new DataError('invalidPath', p, 'only topic folders in the data folder and files in them can be written');
     }
     return abs;
   };
@@ -113,7 +114,7 @@ export function createDataWriter({ root, isEnabled }: DataWriterOptions): DataWr
           return;
         }
         if (await exists(absTo)) {
-          throw new DataError('conflict', to, '대상이 이미 있다');
+          throw new DataError('conflict', to, t().data.targetExists);
         }
         await rename(absFrom, absTo);
       }),

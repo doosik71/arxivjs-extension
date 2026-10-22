@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { isNotFound } from '../data/errors';
 import type { Library } from '../data/library';
 import type { Paper, Topic } from '../data/models';
+import { t } from '../i18n';
 import { buildPaperHtml, createNonce, type Notice } from '../render/html';
 import { PaperRenderer } from '../render/markdown';
 import type { Logger } from '../util/logger';
@@ -125,17 +126,17 @@ export class PaperPanelManager implements vscode.Disposable {
     if (!entry || !library) {
       return;
     }
-    this.log.info(`Reload: 논문 ${entry.paper.id}`);
+    this.log.info(`Reload: paper ${entry.paper.id}`);
     try {
       const fresh = await library.papers.reloadPaper(entry.topic, entry.paper.stem);
       this.host.onPaperReloaded(entry.topic.id);
       if (!fresh) {
-        await this.render(entry, [{ kind: 'error', text: '이 논문의 파일(.json, .md)이 데이터 폴더에서 사라졌습니다.' }]);
+        await this.render(entry, [{ kind: 'error', text: t().paper.filesGone }]);
         return;
       }
       entry.paper = fresh;
     } catch (err) {
-      this.log.error(`논문을 다시 읽지 못함: ${entry.paper.id} — ${String(err)}`);
+      this.log.error(`Could not reload the paper: ${entry.paper.id} — ${String(err)}`);
     }
     await this.render(entry);
   }
@@ -243,7 +244,7 @@ export class PaperPanelManager implements vscode.Disposable {
         return;
       case 'copyInfo':
         await vscode.env.clipboard.writeText(citationText(entry.paper));
-        void vscode.window.setStatusBarMessage('ArxivJS: 논문 정보를 복사했습니다.', 3000);
+        void vscode.window.setStatusBarMessage(`ArxivJS: ${t().common.copiedInfo}`, 3000);
         return;
       case 'revealTopic':
         this.host.revealTopic(entry.topic.id);
@@ -270,7 +271,7 @@ export class PaperPanelManager implements vscode.Disposable {
     const { paper, topic } = entry;
     const notices: Notice[] = [...extraNotices];
     if (paper.metaError) {
-      notices.push({ kind: 'warning', text: `메타 정보(.json)를 읽지 못해 문서에서 추정한 값을 표시합니다: ${paper.metaError}` });
+      notices.push({ kind: 'warning', text: t().paper.metaFallback(paper.metaError) });
     }
 
     let bodyHtml: string | undefined;
@@ -282,14 +283,14 @@ export class PaperPanelManager implements vscode.Disposable {
         bodyHtml = result.html;
         headings = result.headings;
       } catch (err) {
-        this.log.error(`문서를 읽지 못함: ${paper.mdPath} — ${String(err)}`);
+        this.log.error(`Could not read the document: ${paper.mdPath} — ${String(err)}`);
         notices.push({
           kind: 'error',
-          text: isNotFound(err) ? '요약 문서 파일이 없습니다. Reload 하세요.' : '요약 문서를 읽지 못했습니다. 출력 채널 ArxivJS를 확인하세요.',
+          text: isNotFound(err) ? t().paper.docMissing : t().paper.docReadError,
         });
       }
     } else {
-      notices.push({ kind: 'info', text: '요약 문서(.md)가 없습니다. 초록만 표시합니다.' });
+      notices.push({ kind: 'info', text: t().paper.noSummary });
     }
 
     if (seq !== entry.renderSeq || !this.entries.has(entry.key)) {
@@ -337,11 +338,11 @@ export async function openExternalUrl(href: string, log: Logger): Promise<boolea
   try {
     uri = vscode.Uri.parse(href, true);
   } catch {
-    log.warn(`잘못된 링크: ${href}`);
+    log.warn(`Invalid link: ${href}`);
     return false;
   }
   if (!EXTERNAL_SCHEMES.has(uri.scheme)) {
-    log.warn(`외부로 열지 않는 링크: ${href}`);
+    log.warn(`Link not opened externally: ${href}`);
     return false;
   }
   return vscode.env.openExternal(uri);

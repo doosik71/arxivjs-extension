@@ -31,26 +31,26 @@ describe('checkTopicName', () => {
   });
 
   it.each([
-    ['', '입력'],
-    ['   ', '입력'],
-    ['a.b', '영문, 숫자'],
-    ['a/b', '영문, 숫자'],
-    ['few-shot learning', '이미 있습니다'], // 대소문자만 다른 폴더
-    ['Topic_With_Spaces', '이미 있습니다'], // 표시 이름이 같은 폴더 (공백 폴더)
+    ['', 'Enter a topic name'],
+    ['   ', 'Enter a topic name'],
+    ['a.b', 'Only letters, digits'],
+    ['a/b', 'Only letters, digits'],
+    ['few-shot learning', 'already exists'], // 대소문자만 다른 폴더
+    ['Topic_With_Spaces', 'already exists'], // 표시 이름이 같은 폴더 (공백 폴더)
   ])('"%s" → "%s" 포함', (name, reason) => {
     expect(checkTopicName(name, names)).toContain(reason);
   });
 
   it('이름 변경: 자기 자신과는 비교하지 않아 대소문자만 바꿀 수 있다', () => {
     expect(checkTopicName('few-shot learning', names, 'Few-Shot_Learning')).toBeUndefined();
-    expect(checkTopicName('Few-Shot Learning', names, 'Few-Shot_Learning')).toContain('같습니다');
+    expect(checkTopicName('Few-Shot Learning', names, 'Few-Shot_Learning')).toContain('Same as the current name');
   });
 });
 
 describe('summarizeEntries', () => {
   it('확장자별 개수', () => {
     expect(summarizeEntries(['a.json', 'b.json', 'a.TXT', 'README', '.DS_Store'])).toBe(
-      '.json 2개, .txt 1개, (확장자 없음) 1개, .DS_Store 1개',
+      '.json: 2, .txt: 1, (no extension): 1, .DS_Store: 1',
     );
   });
 });
@@ -98,7 +98,7 @@ describe('topicOps (임시 복사본)', () => {
   });
 
   it('deleteTopic: 비어 있지 않으면 conflict (남은 파일 요약), 비어 있으면 지운다', async () => {
-    await expect(deleteTopic(ctx, 'Broken_Data')).rejects.toThrow(/\.json 2개/);
+    await expect(deleteTopic(ctx, 'Broken_Data')).rejects.toThrow(/\.json: 2/);
     expect(existsSync(at('Broken_Data'))).toBe(true);
 
     const folder = await createTopic(ctx, 'Empty Topic');

@@ -1,5 +1,6 @@
 // 논문 저장·메타 수정·이동·삭제·요약 삭제 (DEV-PLAN §6.6.2–6.6.6, 형식 명세 §9). vscode 비의존.
 import * as path from 'node:path';
+import { t } from '../i18n';
 import { DataError, isNotFound } from './errors';
 import type { Paper, PaperMeta, Topic } from './models';
 import { cleanText, isValidPaperId, slugifyPaperTitle } from './paperId';
@@ -120,10 +121,10 @@ export async function savePaper(
   const paperId = resolvePaperId(paper.title, options.paperId);
   const target = bundlePath(topic, paperId ?? '', '.json');
   if (!paperId) {
-    throw new DataError('conflict', target, '제목에 영문이나 숫자가 없어 파일 이름을 만들 수 없습니다. 파일 이름(a-z, 0-9, _)을 입력하세요.');
+    throw new DataError('conflict', target, t().data.noSlug);
   }
   if (!options.overwrite && (await exists(ctx, target))) {
-    throw new DataError('conflict', target, `이 주제에 같은 파일 이름의 논문이 이미 있습니다: ${paperId}`);
+    throw new DataError('conflict', target, t().data.duplicatePaperId(paperId));
   }
   await ctx.writer.writeTextAtomic(target, formatMetaJson(toStoredPaper(paper)));
   return paperId;
@@ -135,7 +136,7 @@ async function readJsonObject(ctx: DataOpsContext, jsonPath: string): Promise<Re
   try {
     parseMetaJson(text); // 객체인지 확인한다.
   } catch (err) {
-    throw new DataError('conflict', jsonPath, `메타 정보(.json)를 읽을 수 없습니다: ${err instanceof Error ? err.message : String(err)}`);
+    throw new DataError('conflict', jsonPath, t().data.metaUnreadable(err instanceof Error ? err.message : String(err)));
   }
   return JSON.parse(text) as Record<string, unknown>;
 }
@@ -143,7 +144,7 @@ async function readJsonObject(ctx: DataOpsContext, jsonPath: string): Promise<Re
 /** 편집 폼의 초깃값용: 디스크의 최신 메타 정보 */
 export async function readPaperMeta(ctx: DataOpsContext, paper: Paper): Promise<PaperMeta> {
   if (!paper.jsonPath) {
-    throw new DataError('notFound', paper.id, '메타 정보(.json)가 없는 논문입니다.');
+    throw new DataError('notFound', paper.id, t().data.noMeta);
   }
   return parseMetaJson(await ctx.fs.readText(paper.jsonPath));
 }
@@ -157,7 +158,7 @@ export type MetaPatch = Partial<Record<keyof NewPaper, string | number | null>>;
  */
 export async function updateMeta(ctx: DataOpsContext, paper: Paper, patch: MetaPatch): Promise<void> {
   if (!paper.jsonPath) {
-    throw new DataError('notFound', paper.id, '메타 정보(.json)가 없는 논문입니다.');
+    throw new DataError('notFound', paper.id, t().data.noMeta);
   }
   const obj = await readJsonObject(ctx, paper.jsonPath);
   for (const [key, value] of Object.entries(patch)) {
@@ -194,10 +195,10 @@ export type MoveResult =
  */
 export async function movePaper(ctx: DataOpsContext, paper: Paper, from: Topic, to: Topic): Promise<MoveResult> {
   if (!paper.jsonPath) {
-    throw new DataError('notFound', paper.id, '메타 정보(.json)가 없는 논문은 옮길 수 없습니다.');
+    throw new DataError('notFound', paper.id, t().data.cannotMoveNoMeta);
   }
   if (from.id === to.id) {
-    throw new DataError('conflict', to.path, '같은 주제로는 옮길 수 없습니다.');
+    throw new DataError('conflict', to.path, t().data.sameTopic);
   }
   const src = (ext: string) => bundlePath(from, paper.stem, ext);
   const dst = (ext: string) => bundlePath(to, paper.stem, ext);
@@ -281,7 +282,7 @@ export async function deletePaper(ctx: DataOpsContext, paper: Paper, topic: Topi
  */
 export async function writeSummary(ctx: DataOpsContext, paper: Paper, topic: Topic, markdown: string): Promise<void> {
   if (!(await paperExists(ctx, topic, paper.stem))) {
-    throw new DataError('conflict', bundlePath(topic, paper.stem, '.json'), '논문의 메타 정보(.json)가 사라졌습니다. 다른 앱이 옮기거나 지웠을 수 있습니다.');
+    throw new DataError('conflict', bundlePath(topic, paper.stem, '.json'), t().data.metaVanished);
   }
   await ctx.writer.writeTextAtomic(bundlePath(topic, paper.stem, '.md'), markdown);
 }

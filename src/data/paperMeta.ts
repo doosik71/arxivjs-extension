@@ -12,7 +12,7 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' && Number
 export function parseMetaJson(text: string): PaperMeta {
   const data: unknown = JSON.parse(text);
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    throw new SyntaxError('메타 정보가 JSON 객체가 아니다');
+    throw new SyntaxError('metadata is not a JSON object');
   }
   const o = data as Record<string, unknown>;
   return {

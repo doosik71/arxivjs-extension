@@ -59,7 +59,7 @@ describe('errorDetail', () => {
 describe('checkLlmSettings / describeEngine', () => {
   it('엔진별로 빠진 값을 알려 준다', () => {
     expect(checkLlmSettings(GEMINI)).toBeUndefined();
-    expect(checkLlmSettings({ ...GEMINI, geminiApiKey: undefined })).toContain('API 키');
+    expect(checkLlmSettings({ ...GEMINI, geminiApiKey: undefined })).toContain('API key');
     expect(checkLlmSettings(OLLAMA)).toBeUndefined();
     expect(checkLlmSettings({ ...OLLAMA, ollamaModel: ' ' })).toContain('ollama.model');
     expect(checkLlmSettings({ ...OLLAMA, ollamaUrl: 'localhost:11434' })).toContain('ollama.url');
@@ -109,11 +109,11 @@ describe('streamOllama', () => {
 
   it('오류 줄, 끝(done) 없이 끊긴 응답, 연결 실패는 LlmError', async () => {
     await expect(collect(streamOllama({ url: 'http://h', model: 'm' }, 'p', { fetch: respond([line({ error: 'out of memory' })]) }))).rejects.toThrow(/out of memory/);
-    await expect(collect(streamOllama({ url: 'http://h', model: 'm' }, 'p', { fetch: respond([line({ response: 'a' })]) }))).rejects.toThrow(/끊겼/);
+    await expect(collect(streamOllama({ url: 'http://h', model: 'm' }, 'p', { fetch: respond([line({ response: 'a' })]) }))).rejects.toThrow(/connection closed/);
     const refused = vi.fn<FetchFn>(async () => {
       throw new TypeError('fetch failed');
     });
-    await expect(collect(streamOllama({ url: 'http://h', model: 'm' }, 'p', { fetch: refused }))).rejects.toThrow(/연결하지 못했습니다/);
+    await expect(collect(streamOllama({ url: 'http://h', model: 'm' }, 'p', { fetch: refused }))).rejects.toThrow(/Could not connect/);
   });
 });
 
