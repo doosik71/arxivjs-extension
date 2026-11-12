@@ -4,6 +4,13 @@ import type { Messages } from './en';
 
 const numberFormat = new Intl.NumberFormat('en-US');
 const num = (n: number) => numberFormat.format(n);
+/** arXiv 429/503 안내의 다시 시도 시점 (Retry-After 초) */
+const retryHint = (seconds?: number) =>
+  seconds === undefined
+    ? '몇 분 뒤에 다시 시도하세요.'
+    : seconds < 60
+      ? `약 ${num(Math.max(1, seconds))}초 뒤에 다시 시도하세요.`
+      : `약 ${num(Math.ceil(seconds / 60))}분 뒤에 다시 시도하세요.`;
 
 export const ko: Messages = {
   common: {
@@ -220,6 +227,7 @@ export const ko: Messages = {
     deleteSummary: '요약 문서를 삭제',
     summarize: '요약',
     openPrompt: '요약 프롬프트를 열',
+    openTxt: '전문 텍스트 파일을 열',
   },
 
   write: {
@@ -227,6 +235,8 @@ export const ko: Messages = {
     writeDisabled: '데이터 폴더 쓰기 기능이 꺼져 있습니다.',
     targetMissing: '대상이 없습니다. 다른 앱이 바꿨을 수 있습니다. Reload 후 다시 시도하세요.',
     failed: (action, reason) => `${action}하지 못했습니다. ${reason}`,
+    arxivRateLimited: (retryAfterSeconds) => `arXiv가 요청을 제한하고 있습니다(HTTP 429). ${retryHint(retryAfterSeconds)}`,
+    arxivUnavailable: (retryAfterSeconds) => `arXiv 서버가 일시적으로 응답할 수 없습니다(HTTP 503). ${retryHint(retryAfterSeconds)}`,
     folderName: (name) => `폴더 이름: ${name}`,
     addTopicTitle: 'ArxivJS: 주제 추가',
     addTopicPrompt: '주제 이름. 영문, 숫자, 한글, 공백, 괄호, 하이픈을 쓸 수 있습니다.',
@@ -307,6 +317,7 @@ export const ko: Messages = {
     claudeKeySaved: 'Claude API 키를 저장했습니다.',
     claudeKeyCleared: 'Claude API 키를 지웠습니다.',
     openPrompt: (file) => `${file} 열기`,
+    openTxt: (file) => `${file} 열기`,
     promptMissingCreate: (file) => `데이터 폴더에 ${file}이(가) 없습니다. 기본 프롬프트로 만들까요?`,
     promptCreateDetail:
       '기본 프롬프트는 문제, 기여, 관련 연구, 방법, 결과, 시사점, TL;DR 절로 나눈 한국어 Markdown 요약을 요청합니다. 논문 전문은 {context} 자리에 들어갑니다. 열린 뒤에 고칠 수 있습니다.',

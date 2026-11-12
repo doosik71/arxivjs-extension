@@ -2,7 +2,7 @@
   "name": "arxivjs-viewer",
   "displayName": "ArxivJS VSCode Extension",
   "description": "Browse papers in an arxivjs data folder from VS Code.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "doosik71",
   "license": "MIT",
   "icon": "media/icon.png",

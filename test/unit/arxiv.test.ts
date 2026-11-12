@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   ARXIV_API,
+  ArxivRetryLaterError,
   buildSearchQuery,
   decodeXml,
   fetchArxivById,
   parseArxivFeed,
   parseArxivId,
+  parseRetryAfter,
   searchArxiv,
   type FetchFn,
 } from '../../src/sources/arxiv';
@@ -137,7 +139,26 @@ describe('searchArxiv / fetchArxivById', () => {
   });
 
   it('HTTP 오류는 예외', async () => {
-    await expect(searchArxiv('x', { fetch: fakeFetch('', 503) })).rejects.toThrow(/HTTP 503/);
+    const err = await searchArxiv('x', { fetch: fakeFetch('', 500) }).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ArxivRetryLaterError);
+    expect((err as Error).message).toMatch(/HTTP 500/);
+  });
+
+  it('HTTP 429는 ArxivRetryLaterError (Retry-After 포함)', async () => {
+    const fetch = vi.fn<FetchFn>(async () => new Response('', { status: 429, headers: { 'Retry-After': '120' } }));
+    const err = await fetchArxivById('1904.04232', { fetch }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ArxivRetryLaterError);
+    expect((err as ArxivRetryLaterError).status).toBe(429);
+    expect((err as ArxivRetryLaterError).retryAfterSeconds).toBe(120);
+    expect((err as Error).message).toMatch(/HTTP 429/);
+  });
+
+  it('Retry-After가 없는 503도 ArxivRetryLaterError', async () => {
+    const err = await searchArxiv('x', { fetch: fakeFetch('', 503) }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ArxivRetryLaterError);
+    expect((err as ArxivRetryLaterError).status).toBe(503);
+    expect((err as ArxivRetryLaterError).retryAfterSeconds).toBeUndefined();
+    expect((err as Error).message).toMatch(/HTTP 503/);
   });
 
   it('취소 신호를 fetch에 넘긴다', async () => {
@@ -148,5 +169,16 @@ describe('searchArxiv / fetchArxivById', () => {
       throw new DOMException('aborted', 'AbortError');
     });
     await expect(fetchArxivById('1904.04232', { fetch, signal: controller.signal })).rejects.toThrow(/aborted/);
+  });
+});
+
+describe('parseRetryAfter', () => {
+  it('초와 HTTP 날짜를 읽는다', () => {
+    const now = Date.parse('2026-11-12T06:00:00Z');
+    expect(parseRetryAfter('30', now)).toBe(30);
+    expect(parseRetryAfter('Thu, 12 Nov 2026 06:01:30 GMT', now)).toBe(90);
+    expect(parseRetryAfter('Thu, 12 Nov 2026 05:59:00 GMT', now)).toBe(0);
+    expect(parseRetryAfter(null, now)).toBeUndefined();
+    expect(parseRetryAfter('soon', now)).toBeUndefined();
   });
 });

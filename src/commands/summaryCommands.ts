@@ -1,5 +1,6 @@
 // AI 요약 명령 (DEV-PLAN §8): Gemini·Claude API 키 관리, 요약 프롬프트 열기, 논문 요약, 주제 일괄 요약.
 // 실제 작업은 src/llm/summarize.ts가 한다.
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { Topic } from '../data/models';
 import { t } from '../i18n';
@@ -16,7 +17,7 @@ import {
   type SummaryStage,
 } from '../llm/summarize';
 import type { FetchFn } from '../sources/arxiv';
-import { FullTextError, type PdfTextExtractor } from '../sources/fullText';
+import { ensureTextFile, FullTextError, ManualTextMissingError, type PdfTextExtractor } from '../sources/fullText';
 import type { Logger } from '../util/logger';
 import { ellipsize } from '../views/format';
 import type { TreeNode } from '../views/topicTreeProvider';
@@ -106,6 +107,22 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
     }),
   ];
 
+  /** 전문 .txt를 편집기로 연다. 없으면 빈 파일을 먼저 만든다. 누를 때 쓰기 기능을 다시 확인한다. */
+  const openTextFile = async (txtPath: string): Promise<void> => {
+    const library = writableLibrary();
+    if (!library) {
+      return;
+    }
+    try {
+      if (await ensureTextFile(library.ops, txtPath)) {
+        log.info(`Created an empty full-text file: ${txtPath}`);
+      }
+      await vscode.window.showTextDocument(vscode.Uri.file(txtPath));
+    } catch (err) {
+      reportError((msg) => msg.action.openTxt, err);
+    }
+  };
+
   /** 사용자에게 보일 이유가 있는 오류(LLM, 전문 텍스트)는 그대로, 나머지는 공용 처리 */
   const reportSummaryError = (title: string, err: unknown) => {
     if (err instanceof PromptFileError) {
@@ -115,6 +132,13 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
       void vscode.window
         .showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`, open)
         .then((choice) => choice === open && vscode.commands.executeCommand('arxivjs.openPromptFile'));
+    } else if (err instanceof ManualTextMissingError) {
+      // manual 논문의 전문을 바로 채울 수 있게 .txt를 여는 버튼을 붙인다.
+      log.error(`Summary failed: ${title} — ${err.message} (${err.txtPath})`);
+      const open = t().summaryCmd.openTxt(path.basename(err.txtPath));
+      void vscode.window
+        .showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`, open)
+        .then((choice) => (choice === open ? openTextFile(err.txtPath) : undefined));
     } else if (err instanceof LlmError || err instanceof FullTextError) {
       log.error(`Summary failed: ${title} — ${err.message}`);
       void vscode.window.showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`);

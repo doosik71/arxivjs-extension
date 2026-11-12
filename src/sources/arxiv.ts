@@ -88,9 +88,39 @@ export function parseArxivFeed(xml: string): ArxivEntry[] {
   return entries;
 }
 
+/**
+ * arXiv가 잠시 뒤 다시 시도하라고 거부했다: 429(요청 빈도 제한) 또는 503(일시적으로 처리 불가).
+ * 서버가 알려 주면 몇 초 뒤에 다시 시도할 수 있는지 담는다.
+ */
+export class ArxivRetryLaterError extends Error {
+  constructor(
+    readonly status: 429 | 503,
+    readonly retryAfterSeconds?: number,
+  ) {
+    super(`arXiv API error: HTTP ${status}${retryAfterSeconds !== undefined ? ` (Retry-After: ${retryAfterSeconds}s)` : ''}`);
+    this.name = 'ArxivRetryLaterError';
+  }
+}
+
+/** Retry-After 헤더(초 또는 HTTP 날짜) → 남은 초. 읽을 수 없으면 undefined */
+export function parseRetryAfter(value: string | null, now = Date.now()): number | undefined {
+  const v = value?.trim();
+  if (!v) {
+    return undefined;
+  }
+  if (/^\d+$/.test(v)) {
+    return Number(v);
+  }
+  const date = Date.parse(v);
+  return Number.isNaN(date) ? undefined : Math.max(0, Math.ceil((date - now) / 1000));
+}
+
 async function query(params: URLSearchParams, fetchFn: FetchFn, signal?: AbortSignal): Promise<ArxivEntry[]> {
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
   const res = await fetchFn(`${ARXIV_API}?${params}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
+  if (res.status === 429 || res.status === 503) {
+    throw new ArxivRetryLaterError(res.status, parseRetryAfter(res.headers.get('retry-after')));
+  }
   if (!res.ok) {
     throw new Error(`arXiv API error: HTTP ${res.status}`);
   }

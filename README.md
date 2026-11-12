@@ -10,7 +10,7 @@ With the default settings, the extension **does not modify** any file in the dat
 
 The data folder (arxivjsdata) follows the format of the [arxivjs](https://github.com/doosik71/arxivjs) app. Write support works without the arxivjs app. Highlights are still edited in that app. To pick up changes made in the arxivjs app, press this extension's Reload button.
 
-> Current version: 0.3.2. For design and development schedule, see `DEV-PLAN.md` in the repository. Changes are recorded in `CHANGELOG.md`.
+> Current version: 0.3.3. For design and development schedule, see `DEV-PLAN.md` in the repository. Changes are recorded in `CHANGELOG.md`.
 
 ## Table of Contents
 
@@ -74,7 +74,7 @@ Use this when you have a distributed `arxivjs-viewer-<version>.vsix` file.
 You can also install it from the command line.
 
 ```bash
-code --install-extension arxivjs-viewer-0.3.2.vsix
+code --install-extension arxivjs-viewer-0.3.3.vsix
 ```
 
 #### Option 3. Uninstall
@@ -302,7 +302,8 @@ Write support (`arxivjs.enableWrite`) is off by default. Before turning it on, n
 | Some math appears as raw source            | The LaTeX syntax is not supported by KaTeX. Only that formula is shown as raw source.   |
 | Write menus and buttons do not appear      | Turn on `arxivjs.enableWrite`.                                                          |
 | Summarization fails with a "userprompt.txt" error | Click **Open userprompt.txt** in the error notification. Create the file if asked, and put `{context}` where the paper text should go. |
-| Summarization fails with a PDF error       | Check the paper's URL and `source`. Scanned image PDFs have no text and cannot be summarized. Manually added papers (`manual`) require a `.txt` file. |
+| Summarization fails with a PDF error       | Check the paper's URL and `source`. Scanned image PDFs have no text and cannot be summarized. Manually added papers (`manual`) require a `.txt` file: click **Open &lt;paper&gt;.txt** in the error notification (an empty file is created if missing) and paste the full text. |
+| Adding or searching papers fails with HTTP 429 or 503 | arXiv is limiting requests (429) or is temporarily unavailable (503). Wait as long as the notification says (a few minutes if it gives no time) and try once more. Retrying right away can extend the limit. |
 | Ollama summaries cover only the beginning  | Ollama's context length (`num_ctx`) is too short. Increase it in your Modelfile or Ollama settings. |
 | Other errors                               | Check the logs in the `ArxivJS` output channel under **View → Output**.                 |
 
@@ -408,7 +409,7 @@ Publishing-related fields in `package.json`:
 | `name`           | `arxivjs-viewer`                                    | Lowercase, no spaces                           |
 | `displayName`    | `ArxivJS VSCode Extension`                          | Name shown in the Marketplace                  |
 | `publisher`      | `doosik71`                                          | Publisher ID. The extension ID is `doosik71.arxivjs-viewer` |
-| `version`        | `0.3.2`                                             | SemVer                                         |
+| `version`        | `0.3.3`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |
 | `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
 | `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
@@ -453,7 +454,7 @@ npx @vscode/vsce login doosik71
 npx @vscode/vsce publish
 ```
 
-- If you already have a `.vsix`, you can upload that file with `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.2.vsix`.
+- If you already have a `.vsix`, you can upload that file with `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.3.vsix`.
 - You can also upload on the web. At <https://marketplace.visualstudio.com/manage>, choose the publisher and upload the `.vsix` via **New extension → Visual Studio Code**.
 - After publishing, the extension goes through validation and appears in Marketplace search within a few minutes. The extension ID is `doosik71.arxivjs-viewer`.
 
@@ -462,8 +463,8 @@ npx @vscode/vsce publish
 ### Updating the Version and Republishing
 
 ```bash
-npx @vscode/vsce publish patch   # 0.3.2 → 0.3.3
-npx @vscode/vsce publish minor   # 0.3.2 → 0.4.0
+npx @vscode/vsce publish patch   # 0.3.3 → 0.3.4
+npx @vscode/vsce publish minor   # 0.3.3 → 0.4.0
 npx @vscode/vsce publish 1.0.0   # set the version explicitly
 ```
 
@@ -481,7 +482,7 @@ To distribute to users of VS Code–compatible editors such as VSCodium and Curs
 
 ```bash
 npx ovsx create-namespace doosik71 -p <token>   # first time only
-npx ovsx publish arxivjs-viewer-0.3.2.vsix -p <token>
+npx ovsx publish arxivjs-viewer-0.3.3.vsix -p <token>
 ```
 
 ### Development Notes

@@ -10,7 +10,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 
 데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 쓰기 기능은 arxivjs 앱 없이 동작한다. 하이라이트 편집은 지금도 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
 
-> 현재 버전: 0.3.2. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
+> 현재 버전: 0.3.3. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
 ## 목차
 
@@ -74,7 +74,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 명령줄에서 설치할 수도 있다.
 
 ```bash
-code --install-extension arxivjs-viewer-0.3.2.vsix
+code --install-extension arxivjs-viewer-0.3.3.vsix
 ```
 
 #### 방법 3. 제거
@@ -299,7 +299,8 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | 수식 일부가 원문 그대로 보인다 | KaTeX가 지원하지 않는 LaTeX 문법이다. 해당 수식만 원문으로 표시된다.                    |
 | 쓰기 메뉴와 버튼이 안 보인다   | 설정 `arxivjs.enableWrite`를 켠다.                                                      |
 | 요약이 "userprompt.txt" 오류로 시작하지 않는다 | 오류 알림의 **userprompt.txt 열기**를 누른다. 파일을 만들지 물으면 만들고, 본문 자리에 `{context}`를 넣는다. |
-| 요약이 PDF 오류로 실패한다     | 논문의 URL과 `source`를 확인한다. 스캔한 이미지 PDF는 텍스트가 없어 요약할 수 없다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다. |
+| 요약이 PDF 오류로 실패한다     | 논문의 URL과 `source`를 확인한다. 스캔한 이미지 PDF는 텍스트가 없어 요약할 수 없다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다. 오류 알림의 **&lt;논문&gt;.txt 열기**를 누르면(파일이 없으면 빈 파일을 만든다) 편집기에서 열리니 전문을 붙여 넣는다. |
+| 논문 추가·검색이 HTTP 429나 503으로 실패한다 | arXiv가 요청을 제한하거나(429) 일시적으로 응답할 수 없는(503) 상태다. 알림에 나온 시간만큼(시간이 없으면 몇 분) 기다렸다가 한 번만 다시 시도한다. 곧바로 반복하면 제한이 길어질 수 있다. |
 | Ollama 요약이 앞부분만 다룬다  | Ollama의 문맥 길이(`num_ctx`)가 짧다. Modelfile이나 Ollama 설정에서 늘린다.             |
 | 그 밖의 오류                   | **View → Output**에서 출력 채널 `ArxivJS`의 로그를 확인한다.                            |
 
@@ -405,7 +406,7 @@ npm run package
 | `name`           | `arxivjs-viewer`                                    | 소문자, 공백 없음                              |
 | `displayName`    | `ArxivJS VSCode Extension`                          | Marketplace에 표시되는 이름                    |
 | `publisher`      | `doosik71`                                          | 게시자 ID. 확장 ID는 `doosik71.arxivjs-viewer` |
-| `version`        | `0.3.2`                                             | SemVer                                         |
+| `version`        | `0.3.3`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |
 | `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
 | `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
@@ -450,7 +451,7 @@ npx @vscode/vsce login doosik71
 npx @vscode/vsce publish
 ```
 
-- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.2.vsix`로 그 파일을 올릴 수 있다.
+- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.3.vsix`로 그 파일을 올릴 수 있다.
 - 웹에서 올릴 수도 있다. <https://marketplace.visualstudio.com/manage>에서 게시자를 고르고 **New extension → Visual Studio Code**로 `.vsix`를 업로드한다.
 - 게시 후 검증을 거쳐 몇 분 안에 Marketplace 검색에 나타난다. 확장 ID는 `doosik71.arxivjs-viewer`다.
 
@@ -459,8 +460,8 @@ npx @vscode/vsce publish
 ### 버전 업데이트와 재게시
 
 ```bash
-npx @vscode/vsce publish patch   # 0.3.2 → 0.3.3
-npx @vscode/vsce publish minor   # 0.3.2 → 0.4.0
+npx @vscode/vsce publish patch   # 0.3.3 → 0.3.4
+npx @vscode/vsce publish minor   # 0.3.3 → 0.4.0
 npx @vscode/vsce publish 1.0.0   # 버전 직접 지정
 ```
 
@@ -478,7 +479,7 @@ VSCodium, Cursor 같은 VS Code 호환 에디터 사용자에게도 배포하려
 
 ```bash
 npx ovsx create-namespace doosik71 -p <token>   # 최초 1회
-npx ovsx publish arxivjs-viewer-0.3.2.vsix -p <token>
+npx ovsx publish arxivjs-viewer-0.3.3.vsix -p <token>
 ```
 
 ### 개발 시 주의 사항

@@ -6,6 +6,7 @@ import type { Library } from '../data/library';
 import type { Topic } from '../data/models';
 import { messagesFor, t, type Messages } from '../i18n';
 import { checkTopicName, createTopic, deleteTopic, listRootNames, renameTopic, summarizeEntries } from '../data/topicOps';
+import { ArxivRetryLaterError } from '../sources/arxiv';
 import { toTopicFolderName } from '../util/displayName';
 import type { Logger } from '../util/logger';
 import type { TreeNode } from '../views/topicTreeProvider';
@@ -59,7 +60,11 @@ export function registerWriteCommands(host: WriteCommandHost, log: Logger): vsco
       return;
     }
     const reason =
-      err instanceof DataError && err.kind === 'conflict'
+      err instanceof ArxivRetryLaterError
+        ? err.status === 429
+          ? t().write.arxivRateLimited(err.retryAfterSeconds)
+          : t().write.arxivUnavailable(err.retryAfterSeconds)
+        : err instanceof DataError && err.kind === 'conflict'
         ? err.message
         : err instanceof DataError && err.kind === 'notFound'
           ? t().write.targetMissing

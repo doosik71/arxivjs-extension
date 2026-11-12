@@ -6,7 +6,7 @@ import type { Paper, PaperMeta, Topic } from '../../src/data/models';
 import { nodeReadonlyFs } from '../../src/data/readonlyFs';
 import type { DataOpsContext } from '../../src/data/topicOps';
 import type { FetchFn } from '../../src/sources/arxiv';
-import { downloadPdf, FullTextError, getFullText, pdfUrlFor } from '../../src/sources/fullText';
+import { downloadPdf, ensureTextFile, FullTextError, getFullText, ManualTextMissingError, pdfUrlFor } from '../../src/sources/fullText';
 import { copyFixture, putFile, type TempData } from './tempData';
 
 const PDF = new TextEncoder().encode('%PDF-1.7 fake');
@@ -71,10 +71,24 @@ describe('getFullText (임시 복사본)', () => {
     expect(readFileSync(path.join(data.root, 'Broken_Data', 'valid_paper.txt'), 'utf8')).toBe('FULL TEXT');
   });
 
-  it('manual 논문에 .txt가 없으면 FullTextError', async () => {
-    await expect(getFullText(ctx, topic(), paper('broken_json_paper'), { ...arxivMeta, source: 'manual' }, { fetch: pdfFetch(), extract: async () => 'x' })).rejects.toThrow(
-      /manual/,
+  it('manual 논문에 .txt가 없으면 ManualTextMissingError (그 .txt 경로 포함)', async () => {
+    const err = await getFullText(ctx, topic(), paper('broken_json_paper'), { ...arxivMeta, source: 'manual' }, { fetch: pdfFetch(), extract: async () => 'x' }).catch(
+      (e: unknown) => e,
     );
+    expect(err).toBeInstanceOf(ManualTextMissingError);
+    expect(err).toBeInstanceOf(FullTextError);
+    expect((err as Error).message).toMatch(/manual/);
+    expect((err as ManualTextMissingError).txtPath).toBe(path.join(data.root, 'Broken_Data', 'broken_json_paper.txt'));
+  });
+
+  it('ensureTextFile: 없으면 빈 파일을 만들고, 있으면 그대로 둔다', async () => {
+    const missing = path.join(data.root, 'Broken_Data', 'broken_json_paper.txt');
+    expect(await ensureTextFile(ctx, missing)).toBe(true);
+    expect(readFileSync(missing, 'utf8')).toBe('');
+    const existing = path.join(data.root, 'Broken_Data', 'valid_paper.txt');
+    const before = readFileSync(existing, 'utf8');
+    expect(await ensureTextFile(ctx, existing)).toBe(false);
+    expect(readFileSync(existing, 'utf8')).toBe(before);
   });
 
   it('텍스트가 비면(스캔 PDF) FullTextError이고 .txt를 만들지 않는다', async () => {

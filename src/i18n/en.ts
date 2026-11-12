@@ -4,6 +4,13 @@
 const numberFormat = new Intl.NumberFormat('en-US');
 const num = (n: number) => numberFormat.format(n);
 const papers = (n: number) => (n === 1 ? '1 paper' : `${num(n)} papers`);
+/** arXiv 429/503 안내의 다시 시도 시점 (Retry-After 초) */
+const retryHint = (seconds?: number) =>
+  seconds === undefined
+    ? 'Wait a few minutes and try again.'
+    : seconds < 60
+      ? `Try again in about ${num(Math.max(1, seconds))} s.`
+      : `Try again in about ${num(Math.ceil(seconds / 60))} min.`;
 
 export const en = {
   common: {
@@ -228,6 +235,7 @@ export const en = {
     deleteSummary: 'delete the summary document',
     summarize: 'summarize',
     openPrompt: 'open the summary prompt',
+    openTxt: 'open the full-text file',
   },
 
   write: {
@@ -235,6 +243,9 @@ export const en = {
     writeDisabled: 'Data folder write support is off.',
     targetMissing: 'The target does not exist. Another app may have changed it. Reload and try again.',
     failed: (action: string, reason: string) => `Could not ${action}. ${reason}`,
+    arxivRateLimited: (retryAfterSeconds?: number) => `arXiv is limiting requests (HTTP 429). ${retryHint(retryAfterSeconds)}`,
+    arxivUnavailable: (retryAfterSeconds?: number) =>
+      `The arXiv server is temporarily unavailable (HTTP 503). ${retryHint(retryAfterSeconds)}`,
     folderName: (name: string) => `Folder name: ${name}`,
     addTopicTitle: 'ArxivJS: Add Topic',
     addTopicPrompt: 'Topic name. Letters, digits, Hangul, spaces, parentheses, and hyphens are allowed.',
@@ -320,6 +331,7 @@ export const en = {
     claudeKeySaved: 'Saved the Claude API key.',
     claudeKeyCleared: 'Deleted the Claude API key.',
     openPrompt: (file: string) => `Open ${file}`,
+    openTxt: (file: string) => `Open ${file}`,
     promptMissingCreate: (file: string) => `The data folder has no ${file}. Create it with the default prompt?`,
     promptCreateDetail:
       'The default prompt asks for a Markdown summary in Korean with sections for the problem, contributions, related works, method, results, insights, and TL;DR. The paper text goes where {context} is. You can edit it after it opens.',

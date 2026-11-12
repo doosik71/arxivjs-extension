@@ -15,6 +15,28 @@ export class FullTextError extends Error {
   override name = 'FullTextError';
 }
 
+/** manual 논문에 전문(.txt)이 없거나 비었다. 알림에서 그 .txt를 여는 버튼을 보여 준다. */
+export class ManualTextMissingError extends FullTextError {
+  override name = 'ManualTextMissingError';
+  constructor(readonly txtPath: string) {
+    super(t().fullText.manualNeedsTxt);
+  }
+}
+
+/** .txt가 없으면 빈 파일로 만든다. 만들었으면 true. 이미 있으면 그대로 둔다. */
+export async function ensureTextFile(ctx: DataOpsContext, txtPath: string): Promise<boolean> {
+  try {
+    await ctx.fs.stat(txtPath);
+    return false;
+  } catch (err) {
+    if (!isNotFound(err)) {
+      throw err;
+    }
+  }
+  await ctx.writer.writeTextAtomic(txtPath, '');
+  return true;
+}
+
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 const MAX_PDF_BYTES = 100 * 1024 * 1024;
 
@@ -76,11 +98,7 @@ export async function getFullText(ctx: DataOpsContext, topic: Topic, paper: Pape
 
   const url = pdfUrlFor(meta);
   if (!url) {
-    throw new FullTextError(
-      meta.source === 'manual'
-        ? t().fullText.manualNeedsTxt
-        : t().fullText.noUrl,
-    );
+    throw meta.source === 'manual' ? new ManualTextMissingError(txtPath) : new FullTextError(t().fullText.noUrl);
   }
   const data = await downloadPdf(url, options);
   let text: string;
