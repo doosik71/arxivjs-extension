@@ -6,11 +6,11 @@ A VS Code extension for browsing papers organized in an arxivjs data folder. If 
 - When you select a topic, shows its papers and their metadata: title, authors, year, URL, abstract, citation count, and source.
 - When you select a paper, renders its summary Markdown document, including math and tables.
 
-With the default settings, the extension **does not modify** any file in the data folder. If you turn on `arxivjs.enableWrite`, you can manage topics, search arXiv and add papers, edit metadata, and move or delete papers. It can also generate paper summaries with Gemini or Ollama (see [Topic and paper management](#usage) and [AI summaries](#usage)).
+With the default settings, the extension **does not modify** any file in the data folder. If you turn on `arxivjs.enableWrite`, you can manage topics, search arXiv and add papers, edit metadata, and move or delete papers. It can also generate paper summaries with Gemini, Claude, or Ollama (see [Topic and paper management](#usage) and [AI summaries](#usage)).
 
 The data folder (arxivjsdata) follows the format of the [arxivjs](https://github.com/doosik71/arxivjs) app. Write support works without the arxivjs app. Highlights are still edited in that app. To pick up changes made in the arxivjs app, press this extension's Reload button.
 
-> Current version: 0.3.1. For design and development schedule, see `DEV-PLAN.md` in the repository. Changes are recorded in `CHANGELOG.md`.
+> Current version: 0.3.2. For design and development schedule, see `DEV-PLAN.md` in the repository. Changes are recorded in `CHANGELOG.md`.
 
 ## Table of Contents
 
@@ -74,7 +74,7 @@ Use this when you have a distributed `arxivjs-viewer-<version>.vsix` file.
 You can also install it from the command line.
 
 ```bash
-code --install-extension arxivjs-viewer-0.3.1.vsix
+code --install-extension arxivjs-viewer-0.3.2.vsix
 ```
 
 #### Option 3. Uninstall
@@ -176,9 +176,10 @@ ArxivJS (Activity Bar)
    - ⚠️ When the arxivjs app is using the same folder, do not edit the same topic or paper in both at the same time. There is no locking, so the last write wins.
 8. **AI summaries (write support)**
    - **Setup**
-     1. The data folder must contain `userprompt.txt`. This is the same file the arxivjs app uses. Put `{context}` where the paper text should go (only the first occurrence is replaced).
+     1. The data folder must contain `userprompt.txt`. This is the same file the arxivjs app uses. Put `{context}` where the paper text should go (only the first occurrence is replaced). To edit it in VS Code, run `ArxivJS: Open Summary Prompt (userprompt.txt)` or click the **Open userprompt.txt** link in the `arxivjs.llm.engine` setting. If the file does not exist, you are asked whether to create it with the default prompt (a Markdown summary in Korean).
      2. Choose an engine (`arxivjs.llm.engine`).
         - **Gemini**: Enter your key with the `ArxivJS: Set Gemini API Key` command. The key is stored in the OS credential store (SecretStorage), not in `settings.json`. The model is `arxivjs.gemini.model` (default `gemini-2.5-flash`).
+        - **Claude**: Enter your key with the `ArxivJS: Set Claude API Key` command. The key is stored in SecretStorage, like the Gemini key. The model is `arxivjs.claude.model` (default `claude-opus-5-5`; `claude-sonnet-5-5` costs less). If your API key is not scoped to a workspace, set `arxivjs.claude.workspaceId`. If the model declines a request, the API retries it on a fallback model. A response that is cut off at the output limit or declined is not saved.
         - **Ollama**: Set `arxivjs.ollama.url` (default `http://localhost:11434`) and `arxivjs.ollama.model` (e.g. `gemma4:31b`). If Ollama's default context length is short, the latter part of long papers is cut off before summarization, so increase `num_ctx` in your Modelfile or Ollama settings.
    - **Generate summary**: From the paper node's context menu or `Generate Summary` in the Paper panel (`Regenerate Summary` if a summary already exists).
      - For the full text, `<paper>.txt` is used if it exists. Otherwise the PDF is downloaded, its text is extracted, and saved as `.txt`. For arXiv papers the abs URL is converted to the pdf URL; for `source: pdf` the URL is used as is. Manually added papers (`manual`) require a `.txt` file.
@@ -197,10 +198,12 @@ ArxivJS (Activity Bar)
 | `arxivjs.paperPanelLocation` | `sameGroup` | Editor group in which to open papers. `sameGroup` uses the same group as the paper list, so the screen is not split. `beside` uses the group next to the list. |
 | `arxivjs.openHomeOnStartup`  | `true`      | Opens the topic list (Home) when the ArxivJS view is first opened.                                                |
 | `arxivjs.enableWrite`        | `false`     | Enables writing to the data folder. When off, the extension only reads.                                           |
-| `arxivjs.llm.engine`         | `gemini`    | AI summary engine: `gemini`, `ollama`                                                                             |
+| `arxivjs.llm.engine`         | `gemini`    | AI summary engine: `gemini`, `ollama`, `claude`                                                                   |
 | `arxivjs.gemini.model`       | `gemini-2.5-flash` | Gemini model. Set the API key with the `ArxivJS: Set Gemini API Key` command (SecretStorage).              |
 | `arxivjs.ollama.url`         | `http://localhost:11434` | Ollama server URL                                                                                    |
 | `arxivjs.ollama.model`       | `""`        | Ollama model (e.g. `gemma4:31b`)                                                                                  |
+| `arxivjs.claude.model`       | `claude-opus-5-5` | Claude model. Set the API key with the `ArxivJS: Set Claude API Key` command (SecretStorage).               |
+| `arxivjs.claude.workspaceId` | `""`        | Optional workspace ID, sent as the `anthropic-workspace-id` header. Needed only for keys not scoped to a workspace. |
 
 The UI is in English by default. To see messages, the tree, and panels in Korean, set `arxivjs.language` to `ko` and reload the window. Command titles and setting descriptions are always shown in English.
 
@@ -225,10 +228,13 @@ Search for `ArxivJS` in the Command Palette (`Ctrl+Shift+P`).
 | `ArxivJS: Move Paper to Another Topic`          | Moves paper files to another topic. (write support)                 |
 | `ArxivJS: Delete Paper`                         | Deletes paper files. (write support)                                |
 | `ArxivJS: Delete Summary`                       | Deletes the summary document (.md) and highlights. (write support)  |
-| `ArxivJS: Generate Summary`                     | Creates a paper summary (.md) with Gemini or Ollama. (write support) |
+| `ArxivJS: Generate Summary`                     | Creates a paper summary (.md) with Gemini, Claude, or Ollama. (write support) |
 | `ArxivJS: Summarize All Papers Without Summaries` | Summarizes papers without summaries in a topic, one by one. (write support) |
 | `ArxivJS: Set Gemini API Key`                   | Stores the Gemini API key in SecretStorage.                         |
 | `ArxivJS: Delete Gemini API Key`                | Deletes the stored Gemini API key.                                  |
+| `ArxivJS: Set Claude API Key`                   | Stores the Claude API key in SecretStorage.                         |
+| `ArxivJS: Delete Claude API Key`                | Deletes the stored Claude API key.                                  |
+| `ArxivJS: Open Summary Prompt (userprompt.txt)` | Opens `userprompt.txt` in the editor. Offers to create it with the default prompt if missing. (write support) |
 
 Write-support commands appear only when `arxivjs.enableWrite` is on.
 
@@ -280,7 +286,7 @@ Write support (`arxivjs.enableWrite`) is off by default. Before turning it on, n
 - **Files the extension changes**: topic folders, papers' `.json`, `.md`, and `.txt`, plus `.hlt` and `.bak` when moving or deleting. It follows the writer rules of the arxivjs format specification. Files are written to a temporary file (`.<name>.tmp`) and then swapped in, so other apps never see a partially written file.
 - **Concurrent editing**: The data folder has no locking. If the arxivjs app or another VS Code window edits the same paper at the same time, the last write wins. Do not edit the same paper in two places at once.
 - **Irreversible operations**: Deleting a paper, deleting a summary, and regenerating a summary keep no backup, so they go through a confirmation dialog. If you manage the data folder as a git repository, `.json` and `.md` can be restored with git. Note that the default `.gitignore` does not track `.txt`, `.hlt`, or `.bak`.
-- **AI summaries and privacy**: Summarizing sends the full paper text and `userprompt.txt` to the selected engine. With Gemini, they are sent to Google's servers. Summarize documents that must not leave your machine with a local Ollama. The Gemini API key is stored only in the OS credential store (SecretStorage) and never written to logs or settings files.
+- **AI summaries and privacy**: Summarizing sends the full paper text and `userprompt.txt` to the selected engine. With Gemini, they are sent to Google's servers; with Claude, to Anthropic's servers. Summarize documents that must not leave your machine with a local Ollama. The Gemini and Claude API keys are stored only in the OS credential store (SecretStorage) and never written to logs or settings files.
 - **Differences from the arxivjs app**
   - No `.bak` backup is created when regenerating or deleting a summary. The arxivjs app moves `.md` to `.bak` when deleting a summary.
   - Entries with only an `.md` and no `.json` are listed, but cannot be edited, moved, or deleted.
@@ -295,7 +301,7 @@ Write support (`arxivjs.enableWrite`) is off by default. Before turning it on, n
 | A paper shows "No document"                | That paper has no `.md` file yet. Only metadata and the abstract are shown.             |
 | Some math appears as raw source            | The LaTeX syntax is not supported by KaTeX. Only that formula is shown as raw source.   |
 | Write menus and buttons do not appear      | Turn on `arxivjs.enableWrite`.                                                          |
-| Summarization fails with a "userprompt.txt" error | Create `userprompt.txt` in the data folder and put `{context}` where the paper text should go. |
+| Summarization fails with a "userprompt.txt" error | Click **Open userprompt.txt** in the error notification. Create the file if asked, and put `{context}` where the paper text should go. |
 | Summarization fails with a PDF error       | Check the paper's URL and `source`. Scanned image PDFs have no text and cannot be summarized. Manually added papers (`manual`) require a `.txt` file. |
 | Ollama summaries cover only the beginning  | Ollama's context length (`num_ctx`) is too short. Increase it in your Modelfile or Ollama settings. |
 | Other errors                               | Check the logs in the `ArxivJS` output channel under **View → Output**.                 |
@@ -402,7 +408,7 @@ Publishing-related fields in `package.json`:
 | `name`           | `arxivjs-viewer`                                    | Lowercase, no spaces                           |
 | `displayName`    | `ArxivJS VSCode Extension`                          | Name shown in the Marketplace                  |
 | `publisher`      | `doosik71`                                          | Publisher ID. The extension ID is `doosik71.arxivjs-viewer` |
-| `version`        | `0.3.1`                                             | SemVer                                         |
+| `version`        | `0.3.2`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |
 | `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
 | `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
@@ -447,7 +453,7 @@ npx @vscode/vsce login doosik71
 npx @vscode/vsce publish
 ```
 
-- If you already have a `.vsix`, you can upload that file with `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.1.vsix`.
+- If you already have a `.vsix`, you can upload that file with `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.2.vsix`.
 - You can also upload on the web. At <https://marketplace.visualstudio.com/manage>, choose the publisher and upload the `.vsix` via **New extension → Visual Studio Code**.
 - After publishing, the extension goes through validation and appears in Marketplace search within a few minutes. The extension ID is `doosik71.arxivjs-viewer`.
 
@@ -456,8 +462,8 @@ npx @vscode/vsce publish
 ### Updating the Version and Republishing
 
 ```bash
-npx @vscode/vsce publish patch   # 0.3.1 → 0.3.2
-npx @vscode/vsce publish minor   # 0.3.1 → 0.4.0
+npx @vscode/vsce publish patch   # 0.3.2 → 0.3.3
+npx @vscode/vsce publish minor   # 0.3.2 → 0.4.0
 npx @vscode/vsce publish 1.0.0   # set the version explicitly
 ```
 
@@ -475,7 +481,7 @@ To distribute to users of VS Code–compatible editors such as VSCodium and Curs
 
 ```bash
 npx ovsx create-namespace doosik71 -p <token>   # first time only
-npx ovsx publish arxivjs-viewer-0.3.1.vsix -p <token>
+npx ovsx publish arxivjs-viewer-0.3.2.vsix -p <token>
 ```
 
 ### Development Notes

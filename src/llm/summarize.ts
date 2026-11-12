@@ -1,6 +1,6 @@
 // 논문 요약 생성 (DEV-PLAN §8.3, 형식 명세 §9.2. 단 .bak 백업은 만들지 않는다). vscode 비의존.
 import * as path from 'node:path';
-import { isNotFound } from '../data/errors';
+import { DataError, isNotFound } from '../data/errors';
 import { t } from '../i18n';
 import type { Paper, Topic } from '../data/models';
 import { readPaperMeta, writeSummary } from '../data/paperOps';
@@ -31,19 +31,91 @@ export interface SummarizeResult {
   downloaded: boolean;
 }
 
-/** 데이터 폴더의 userprompt.txt. 없거나 {context}가 없으면 LlmError */
+/**
+ * 데이터 폴더에 userprompt.txt가 없을 때 새로 만드는 기본 프롬프트.
+ * arxivjs 앱의 prompt.json "summarization" 프롬프트에 {context}를 붙였다. 요약 문서 구조(형식 명세 §8.2)가 같다.
+ */
+export const DEFAULT_PROMPT = `Please summarize the following paper.
+
+The summary **must be written in Korean** and **must follow Markdown syntax** using a clear hierarchical structure with headings, bullet points, and formatting where appropriate.
+Ensure the content is **concise, accurate, and easy to understand** for a technical but general audience.
+
+Please follow these formatting rules:
+
+- At the very top, display:
+  - The **paper title** on the first line as a '#' heading.
+  - The **author list** on the second line as plain text (comma-separated), below the title.
+
+- Then use the following summary structure:
+  - ## 🧩 Problem to Solve
+    - Clearly describe the main research problem or question the paper aims to address.
+  - ## ✨ Key Contributions
+    - List the core findings and novel contributions as bullet points.
+  - ## 📎 Related Works
+    - Mention key prior works referenced in the paper.
+  - ## 🛠️ Methodology
+    - Describe the approach or algorithm used, preferably with steps or bullet points.
+  - ## 📊 Results
+    - Summarize quantitative or qualitative results briefly.
+  - ## 🧠 Insights & Discussion
+    - Explain the implications, any limitations, or significance of the results.
+  - ## 📌 TL;DR
+    - Provide a TL;DR summary of this paper, highlighting the main problem, proposed method, and key findings.
+
+- Guidelines for writing in Markdown format:
+  1. Use braces around multi-character subscripts or superscripts in MathJax to avoid rendering errors.
+  2. Use $...$ for inline math and $$...$$ for block math to ensure compatibility with MathJax.
+  3. Do not use backticks (\`) for math; use dollar signs ($) to allow proper MathJax rendering.
+
+Here is the paper content:
+
+${PLACEHOLDER}
+`;
+
+/** userprompt.txt가 없거나 {context}가 없다. 알림에서 프롬프트 파일을 여는 버튼을 보여 준다. */
+export class PromptFileError extends LlmError {
+  override name = 'PromptFileError';
+}
+
+/** 데이터 폴더의 userprompt.txt 절대 경로 */
+export function promptFilePath(ctx: DataOpsContext): string {
+  return path.join(ctx.root, PROMPT_FILE);
+}
+
+/** userprompt.txt가 있는가 */
+export async function promptFileExists(ctx: DataOpsContext): Promise<boolean> {
+  try {
+    await ctx.fs.stat(promptFilePath(ctx));
+    return true;
+  } catch (err) {
+    if (isNotFound(err)) {
+      return false;
+    }
+    throw err;
+  }
+}
+
+/** 기본 프롬프트로 userprompt.txt를 만든다. 그사이 다른 앱이 만들었으면 덮어쓰지 않고 conflict */
+export async function createDefaultPrompt(ctx: DataOpsContext): Promise<void> {
+  if (await promptFileExists(ctx)) {
+    throw new DataError('conflict', promptFilePath(ctx), t().llm.promptExists(PROMPT_FILE));
+  }
+  await ctx.writer.writeTextAtomic(promptFilePath(ctx), DEFAULT_PROMPT);
+}
+
+/** 데이터 폴더의 userprompt.txt. 없거나 {context}가 없으면 PromptFileError */
 export async function readPromptTemplate(ctx: DataOpsContext): Promise<string> {
   let template: string;
   try {
-    template = await ctx.fs.readText(path.join(ctx.root, PROMPT_FILE));
+    template = await ctx.fs.readText(promptFilePath(ctx));
   } catch (err) {
     if (isNotFound(err)) {
-      throw new LlmError(t().llm.promptMissing(PROMPT_FILE, PLACEHOLDER));
+      throw new PromptFileError(t().llm.promptMissing(PROMPT_FILE, PLACEHOLDER));
     }
     throw err;
   }
   if (!template.includes(PLACEHOLDER)) {
-    throw new LlmError(t().llm.placeholderMissing(PROMPT_FILE, PLACEHOLDER));
+    throw new PromptFileError(t().llm.placeholderMissing(PROMPT_FILE, PLACEHOLDER));
   }
   return template;
 }

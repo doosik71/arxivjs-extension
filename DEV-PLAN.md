@@ -14,7 +14,7 @@ arxivjs 데이터 폴더(arxivjsdata)를 VS Code에서 탐색하고, 사용자�
 | 확장 이름      | ArxivJS Viewer                               | **ArxivJS VSCode Extension** (확장 ID `doosik71.arxivjs-viewer`는 그대로)       |
 | 데이터 폴더    | 읽기 전용                                    | 기본은 읽기 전용. 설정 `arxivjs.enableWrite`를 켜면 쓰기 기능을 쓸 수 있다.     |
 | 쓰기 기능      | 없음                                         | 토픽 관리, 논문 추가·편집·이동·삭제, AI 요약 생성·삭제                          |
-| AI 요약        | 없음 (arxivjs 앱의 일)                       | Gemini 또는 Ollama를 확장이 직접 호출한다. arxivjs 앱이 없어도 동작한다.        |
+| AI 요약        | 없음 (arxivjs 앱의 일)                       | Gemini, Claude 또는 Ollama를 확장이 직접 호출한다. arxivjs 앱이 없어도 동작한다.        |
 | API 키         | —                                            | VS Code `SecretStorage`에 보관한다.                                             |
 | 토픽 폴더 이름 | `^[A-Za-z0-9_-]+$`만 표시                    | 형식 명세 §6에 맞춰 한글, 괄호, 공백도 허용한다.                                |
 | 요약 백업      | —                                            | `.bak`을 만들지 않는다. 기존 `.md`는 그대로 덮어쓴다.                           |
@@ -36,7 +36,7 @@ arxivjs 데이터 폴더(arxivjsdata)를 VS Code에서 탐색하고, 사용자�
 4. **토픽 관리**: 토픽을 만들고, 이름을 바꾸고, 빈 토픽을 지운다.
 5. **논문 추가**: arXiv 검색, arXiv URL/ID, 메타 정보 직접 입력으로 논문을 추가한다.
 6. **논문 관리**: 메타 정보를 고치고, 논문을 다른 토픽으로 옮기고, 지운다.
-7. **AI 요약**: Gemini 또는 Ollama로 논문 요약(`.md`)을 만들거나 다시 만든다. 요약 문서가 없는 논문을 토픽 단위로 한꺼번에 요약한다.
+7. **AI 요약**: Gemini, Claude 또는 Ollama로 논문 요약(`.md`)을 만들거나 다시 만든다. 요약 문서가 없는 논문을 토픽 단위로 한꺼번에 요약한다.
 
 ### 1.2 범위 밖 (Non-Goals)
 
@@ -304,6 +304,9 @@ UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"�
 | --------------------------- | --------------------------- |
 | `arxivjs.setGeminiApiKey`   | ArxivJS: Gemini API 키 설정 |
 | `arxivjs.clearGeminiApiKey` | ArxivJS: Gemini API 키 삭제 |
+| `arxivjs.setClaudeApiKey`   | ArxivJS: Claude API 키 설정 |
+| `arxivjs.clearClaudeApiKey` | ArxivJS: Claude API 키 삭제 |
+| `arxivjs.openPromptFile`    | ArxivJS: 요약 프롬프트 열기 (userprompt.txt). 쓰기 기능이 켜져 있을 때만 연다. 없으면 기본 프롬프트로 만들지 묻는다. 설정 `arxivjs.llm.engine` 설명의 링크와 프롬프트 오류 알림의 버튼에서도 부른다. |
 
 ### 3.4 설정 (`contributes.configuration`)
 
@@ -315,12 +318,14 @@ UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"�
 | `arxivjs.openInNewTab`       | boolean | `true`                   | 논문마다 새 탭을 연다.                                               |
 | `arxivjs.paperPanelLocation` | enum    | `sameGroup`              | `sameGroup` \| `beside` (§3.2)                                       |
 | `arxivjs.openHomeOnStartup`  | boolean | `true`                   | ArxivJS 뷰를 처음 열 때 홈을 연다 (§3.2.1)                           |
-| `arxivjs.llm.engine`         | enum    | `gemini`                 | 요약에 쓸 엔진: `gemini` \| `ollama`                                 |
+| `arxivjs.llm.engine`         | enum    | `gemini`                 | 요약에 쓸 엔진: `gemini` \| `ollama` \| `claude`                     |
 | `arxivjs.gemini.model`       | string  | `gemini-2.5-flash`       | Gemini 모델 이름 (arxivjs 기본값과 같다)                             |
 | `arxivjs.ollama.url`         | string  | `http://localhost:11434` | Ollama 서버 주소. `scope: machine`.                                  |
 | `arxivjs.ollama.model`       | string  | `""`                     | Ollama 모델 이름 (예: `gemma4:31b`)                                  |
+| `arxivjs.claude.model`       | string  | `claude-opus-5-5`        | Claude 모델 이름 (arxivjs 기본값과 같다)                             |
+| `arxivjs.claude.workspaceId` | string  | `""`                     | 선택. `anthropic-workspace-id` 헤더. `scope: machine`.               |
 
-- API 키는 설정에 두지 않는다. Gemini API 키는 `SecretStorage`(키 이름 `arxivjs.gemini.apiKey`)에만 저장한다(§8.2).
+- API 키는 설정에 두지 않는다. Gemini·Claude API 키는 `SecretStorage`(키 이름 `arxivjs.gemini.apiKey`, `arxivjs.claude.apiKey`)에만 저장한다(§8.2).
 - `dataFolder`가 비어 있거나 경로가 없으면 TreeView에 **Welcome View**를 보여준다. 여기에 "데이터 폴더 선택" 버튼을 둔다. 안내 문구는 쓰기 설정 상태에 맞게 바꾼다("이 확장은 데이터 폴더를 읽기만 합니다" 문구 삭제).
 
 ## 4. 기술 스택
@@ -334,7 +339,7 @@ UI 문구는 기존 화면과 같이 "주제"를 쓴다(이 문서의 "토픽"�
 | 수식         | `@vscode/markdown-it-katex` + `katex` CSS/폰트 번들 | VS Code 내장 Markdown 미리보기와 같은 계열이다. 확장 호스트에서 HTML로 렌더링한다. |
 | 앵커/목차    | `markdown-it-anchor`                                | H2 목차와 이모지 헤더 slug                                                         |
 | HTTP         | 전역 `fetch`                                        | arXiv API, PDF 다운로드, Gemini/Ollama REST. 추가 의존성 없음.                     |
-| LLM          | Gemini REST(`streamGenerateContent`), Ollama REST(`/api/generate`) | SDK 없이 REST를 직접 호출한다. 의존성을 늘리지 않고, 테스트에서 `fetch`를 주입하기 쉽다. |
+| LLM          | Gemini REST(`streamGenerateContent`), Ollama REST(`/api/generate`), Claude(`@anthropic-ai/sdk`) | Gemini·Ollama는 SDK 없이 REST를 직접 호출한다. Claude는 공식 SDK를 쓰고, 주입한 `fetch`와 `signal`을 SDK에 넘겨 테스트와 취소를 똑같이 다룬다. SDK는 esbuild 번들에 들어간다(배포 번들 약 470KB → 890KB). |
 | arXiv 응답   | 직접 작성한 작은 Atom 파서 (`src/sources/arxiv.ts`) | (P8에서 결정) 필요한 필드가 `<entry>`의 id, title, summary, published, author/name뿐이다. 후보였던 `fast-xml-parser` 5.x는 하위 의존성 6개, 1.3MB라 쓰지 않았다. 실제 arXiv 응답으로 확인했다. |
 | PDF 텍스트   | `unpdf` 1.8.1 (MIT, 의존성 없음, 최신 pdf.js 내장)   | (P9에서 결정) `pdf-parse` 2.x는 네이티브 모듈(`@napi-rs/canvas`)이 필요하고 21MB다. 1.x(arxivjs)는 2018년 pdf.js라 CVE-2024-4367 범위다. `pdfjs-dist`는 35MB, ESM 전용이다. unpdf의 pdf.js 빌드에는 글꼴 eval 경로가 없다. 공개된 지 두 달이 넘은 1.8.1로 고정했다. |
 | 테스트       | `vitest`(순수 로직) + `@vscode/test-electron`(통합) |                                                                                    |
@@ -383,6 +388,7 @@ arxivjs-extension/
 │   │   └── pdfWorkerClient.ts   # 추출할 때마다 작업자를 띄우는 PdfTextExtractor
 │   ├── llm/                     # ★ (vscode 비의존, fetch 주입)
 │   │   ├── common.ts            # LlmError, 스트림 줄 읽기(SSE·NDJSON), 오류 응답 해석
+│   │   ├── claude.ts            # Claude (공식 SDK, 스트리밍)
 │   │   ├── engine.ts            # LlmSettings, 설정 검사, 엔진 선택
 │   │   ├── gemini.ts            # Gemini REST
 │   │   ├── ollama.ts            # Ollama REST
@@ -636,16 +642,18 @@ summarizePaper ── 전문: .txt 캐시 → 없으면 PDF 다운로드·추출
 | ------ | --------------------------------------------------------------------------------------- | ------------------------------------------- |
 | Gemini | `POST https://generativelanguage.googleapis.com/v1beta/models/<model>:streamGenerateContent?alt=sse` | API 키(`SecretStorage`), `arxivjs.gemini.model` |
 | Ollama | `POST <arxivjs.ollama.url>/api/generate` (`stream: true`, NDJSON)                       | `arxivjs.ollama.url`, `arxivjs.ollama.model` |
+| Claude | `@anthropic-ai/sdk`의 `beta.messages.stream` (`max_tokens` 64000, 서버 측 대체 모델 `fallbacks: "default"`) | API 키(`SecretStorage`), `arxivjs.claude.model`, 선택 `arxivjs.claude.workspaceId` |
 
 - 엔진은 `arxivjs.llm.engine`으로 고른다. 필요한 값이 없으면 요약을 시작하지 않고, 설정이나 키 입력으로 바로 가는 버튼이 있는 알림을 띄운다.
 - 요청은 `AbortController`로 취소할 수 있다. 진행률 알림의 취소 버튼이 이것을 부른다.
 - 응답은 스트리밍으로 받아 모은다. 진행률 알림에 받은 글자 수를 보여준다. 응답이 정상으로 끝났을 때만 저장한다.
+- Claude 응답이 `max_tokens`로 잘렸거나 `refusal`로 끝나면 `LlmError`로 끝내 저장하지 않는다. arxivjs 앱과 같다.
 
 ### 8.2 API 키 보관
 
-- Gemini API 키는 `context.secrets`(`SecretStorage`)에 `arxivjs.gemini.apiKey`라는 이름으로 저장한다. OS 자격 증명 저장소에 들어가며, `settings.json`이나 데이터 폴더에는 남지 않는다.
-- `ArxivJS: Gemini API 키 설정` 명령은 `password: true`인 InputBox로 키를 받는다. `ArxivJS: Gemini API 키 삭제`로 지운다.
-- 키는 로그, 오류 메시지, Webview에 내보내지 않는다. 요청 URL에 키를 넣지 않고 `x-goog-api-key` 헤더로 보낸다.
+- Gemini·Claude API 키는 `context.secrets`(`SecretStorage`)에 `arxivjs.gemini.apiKey`, `arxivjs.claude.apiKey`라는 이름으로 저장한다. OS 자격 증명 저장소에 들어가며, `settings.json`이나 데이터 폴더에는 남지 않는다.
+- `ArxivJS: Gemini API 키 설정`·`ArxivJS: Claude API 키 설정` 명령은 `password: true`인 InputBox로 키를 받는다. 각각의 삭제 명령으로 지운다.
+- 키는 로그, 오류 메시지, Webview에 내보내지 않는다. 요청 URL에 키를 넣지 않는다. Gemini는 `x-goog-api-key` 헤더로, Claude는 SDK가 `Authorization` 헤더로 보낸다.
 - Ollama는 키를 쓰지 않는다.
 
 ### 8.3 요약 생성 절차

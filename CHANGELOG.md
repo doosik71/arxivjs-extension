@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.2 — 2026-11-12
+
+### 추가
+
+- AI 요약 엔진에 **Claude**를 더했다. 설정 `arxivjs.llm.engine`에서 `gemini`, `ollama`, `claude` 중에서 고른다.
+  - 명령 `ArxivJS: Set Claude API Key`, `ArxivJS: Delete Claude API Key`: API 키를 OS 자격 증명 저장소(SecretStorage)에 저장하거나 지운다.
+  - 설정 `arxivjs.claude.model`(기본 `claude-opus-5-5`), `arxivjs.claude.workspaceId`(선택, 워크스페이스에 묶이지 않은 키용 `anthropic-workspace-id` 헤더).
+  - 공식 SDK(`@anthropic-ai/sdk`)로 스트리밍 호출한다. 모델이 요청을 거부하면 서버 측 대체 모델(`fallbacks: "default"`)로 다시 시도한다. 출력 한도에서 잘렸거나 거부된 응답은 저장하지 않는다.
+- 명령 `ArxivJS: Open Summary Prompt (userprompt.txt)`: 데이터 폴더의 `userprompt.txt`를 편집기로 연다. 쓰기 기능이 켜져 있을 때만 열고, 파일이 없으면 기본 프롬프트(arxivjs 앱의 `summarization` 프롬프트)로 만들지 묻는다.
+  - 설정 `arxivjs.llm.engine` 설명에 이 명령을 부르는 **Open userprompt.txt** 링크를 넣었다.
+  - `userprompt.txt`가 없거나 `{context}`가 없어 요약이 실패하면 오류 알림에 **Open userprompt.txt** 버튼이 나온다.
+
 ## 0.3.1 — 2026-10-22
 
 ### 바뀜

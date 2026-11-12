@@ -54,6 +54,9 @@ suite('쓰기 설정', () => {
       'arxivjs.summarizeTopic',
       'arxivjs.setGeminiApiKey',
       'arxivjs.clearGeminiApiKey',
+      'arxivjs.setClaudeApiKey',
+      'arxivjs.clearClaudeApiKey',
+      'arxivjs.openPromptFile',
     ]) {
       assert.ok(commands.includes(id), id);
     }

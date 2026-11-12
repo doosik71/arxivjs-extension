@@ -2,7 +2,7 @@
   "name": "arxivjs-viewer",
   "displayName": "ArxivJS VSCode Extension",
   "description": "Browse papers in an arxivjs data folder from VS Code.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "doosik71",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -134,15 +134,17 @@
         "arxivjs.llm.engine": {
           "type": "string",
           "enum": [
+            "claude",
             "gemini",
             "ollama"
           ],
           "enumDescriptions": [
+            "Anthropic Claude (requires an API key: command \"ArxivJS: Set Claude API Key\")",
             "Google Gemini (requires an API key: command \"ArxivJS: Set Gemini API Key\")",
             "Local or remote Ollama server"
           ],
           "default": "gemini",
-          "description": "Engine used for AI summaries"
+          "markdownDescription": "Engine used for AI summaries. The summary prompt is `userprompt.txt` in the data folder: [Open userprompt.txt](command:arxivjs.openPromptFile) (requires `#arxivjs.enableWrite#`)."
         },
         "arxivjs.gemini.model": {
           "type": "string",
@@ -159,6 +161,17 @@
           "type": "string",
           "default": "",
           "description": "Ollama model name (e.g. gemma4:31b)"
+        },
+        "arxivjs.claude.model": {
+          "type": "string",
+          "default": "claude-opus-5-5",
+          "description": "Claude model name (e.g. claude-opus-5-5, claude-sonnet-5-5). The API key is stored in the OS credential store (SecretStorage), not in settings."
+        },
+        "arxivjs.claude.workspaceId": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Optional Claude workspace ID, sent as the anthropic-workspace-id header. Needed only for API keys that are not scoped to a workspace."
         }
       }
     },
@@ -232,6 +245,24 @@
       {
         "command": "arxivjs.clearGeminiApiKey",
         "title": "Delete Gemini API Key",
+        "category": "ArxivJS",
+        "icon": "$(key)"
+      },
+      {
+        "command": "arxivjs.openPromptFile",
+        "title": "Open Summary Prompt (userprompt.txt)",
+        "category": "ArxivJS",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "arxivjs.setClaudeApiKey",
+        "title": "Set Claude API Key",
+        "category": "ArxivJS",
+        "icon": "$(key)"
+      },
+      {
+        "command": "arxivjs.clearClaudeApiKey",
+        "title": "Delete Claude API Key",
         "category": "ArxivJS",
         "icon": "$(key)"
       },
@@ -448,6 +479,10 @@
           "when": "config.arxivjs.enableWrite"
         },
         {
+          "command": "arxivjs.openPromptFile",
+          "when": "config.arxivjs.enableWrite"
+        },
+        {
           "command": "arxivjs.reloadTopic",
           "when": "false"
         },
@@ -489,6 +524,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@vscode/markdown-it-katex": "^1.1.2",
     "katex": "^0.18.11",
     "markdown-it": "^15.0.2",

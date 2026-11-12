@@ -6,11 +6,11 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 - 주제를 고르면 논문 목록과 메타 정보를 보여준다. 메타 정보는 제목, 저자, 연도, URL, 초록, 인용수, 출처다.
 - 논문을 고르면 요약 마크다운 문서를 렌더링해서 보여준다. 수식과 표도 렌더링한다.
 
-기본 설정에서는 데이터 폴더의 파일을 **수정하지 않는다.** 설정 `arxivjs.enableWrite`를 켜면 주제를 관리하고, arXiv에서 논문을 찾아 추가하고, 메타 정보를 고치고, 논문을 옮기거나 지울 수 있다. Gemini나 Ollama로 논문 요약 문서도 만든다([주제·논문 관리](#사용-방법), [AI 요약](#사용-방법) 참고).
+기본 설정에서는 데이터 폴더의 파일을 **수정하지 않는다.** 설정 `arxivjs.enableWrite`를 켜면 주제를 관리하고, arXiv에서 논문을 찾아 추가하고, 메타 정보를 고치고, 논문을 옮기거나 지울 수 있다. Gemini, Claude, Ollama로 논문 요약 문서도 만든다([주제·논문 관리](#사용-방법), [AI 요약](#사용-방법) 참고).
 
 데이터 폴더(arxivjsdata)는 [arxivjs](https://github.com/doosik71/arxivjs) 앱의 형식을 따른다. 쓰기 기능은 arxivjs 앱 없이 동작한다. 하이라이트 편집은 지금도 그 앱에서 한다. arxivjs 앱에서 바꾼 내용은 이 확장의 Reload 버튼을 눌러 반영한다.
 
-> 현재 버전: 0.3.0. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
+> 현재 버전: 0.3.2. 설계와 개발 일정은 저장소의 `DEV-PLAN.md`를 참고한다. 바뀐 내용은 `CHANGELOG.md`에 적는다.
 
 ## 목차
 
@@ -74,7 +74,7 @@ arxivjs 데이터 폴더에 정리된 논문을 VS Code에서 열람하는 확�
 명령줄에서 설치할 수도 있다.
 
 ```bash
-code --install-extension arxivjs-viewer-0.3.0.vsix
+code --install-extension arxivjs-viewer-0.3.2.vsix
 ```
 
 #### 방법 3. 제거
@@ -176,9 +176,10 @@ ArxivJS (Activity Bar)
    - ⚠️ arxivjs 앱이 같은 폴더를 쓰고 있을 때는 같은 주제나 논문을 동시에 고치지 않는다. 잠금 기능이 없어서 나중에 쓴 쪽이 남는다.
 8. **AI 요약 (쓰기 기능)**
    - **준비**
-     1. 데이터 폴더에 `userprompt.txt`가 있어야 한다. arxivjs 앱과 같은 파일이다. 논문 본문이 들어갈 자리에 `{context}`를 쓴다(첫 번째 것만 바뀐다).
+     1. 데이터 폴더에 `userprompt.txt`가 있어야 한다. arxivjs 앱과 같은 파일이다. 논문 본문이 들어갈 자리에 `{context}`를 쓴다(첫 번째 것만 바뀐다). VS Code에서 고치려면 명령 `ArxivJS: 요약 프롬프트 열기 (userprompt.txt)`를 실행하거나 설정 `arxivjs.llm.engine`의 **Open userprompt.txt** 링크를 누른다. 파일이 없으면 기본 프롬프트(한국어 Markdown 요약)로 만들지 묻는다.
      2. 엔진을 고른다(설정 `arxivjs.llm.engine`).
         - **Gemini**: 명령 `ArxivJS: Gemini API 키 설정`으로 키를 넣는다. 키는 `settings.json`이 아니라 OS 자격 증명 저장소(SecretStorage)에 저장된다. 모델은 `arxivjs.gemini.model`(기본 `gemini-2.5-flash`).
+        - **Claude**: 명령 `ArxivJS: Claude API 키 설정`으로 키를 넣는다. Gemini 키처럼 SecretStorage에 저장된다. 모델은 `arxivjs.claude.model`(기본 `claude-opus-5-5`, 비용을 줄이려면 `claude-sonnet-5-5`). 워크스페이스에 묶이지 않은 API 키를 쓰면 `arxivjs.claude.workspaceId`를 설정한다. 모델이 요청을 거부하면 API가 대체 모델로 다시 시도한다. 출력 한도에서 잘렸거나 거부된 응답은 저장하지 않는다.
         - **Ollama**: `arxivjs.ollama.url`(기본 `http://localhost:11434`)과 `arxivjs.ollama.model`(예: `gemma4:31b`)을 설정한다. Ollama의 기본 문맥 길이가 짧으면 긴 논문의 뒷부분이 잘린 채 요약되므로, Modelfile이나 Ollama 설정에서 `num_ctx`를 늘린다.
    - **요약 생성**: 논문 노드의 오른쪽 클릭 메뉴나 Paper 패널의 `요약 생성`(요약이 있으면 `요약 다시 생성`).
      - 전문 텍스트는 `<논문>.txt`가 있으면 그것을 쓴다. 없으면 PDF를 내려받아 텍스트를 뽑고 `.txt`로 저장한다. arXiv 논문은 abs 주소를 pdf 주소로 바꾸고, `source: pdf`는 URL을 그대로 쓴다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다.
@@ -196,10 +197,12 @@ ArxivJS (Activity Bar)
 | `arxivjs.paperPanelLocation` | `sameGroup` | 논문을 열 편집기 그룹. `sameGroup`은 논문 목록과 같은 그룹이라 화면을 나누지 않는다. `beside`는 목록 옆 그룹이다. |
 | `arxivjs.openHomeOnStartup`  | `true`      | ArxivJS 뷰를 처음 열 때 주제 목록(홈)을 함께 연다.                                                                |
 | `arxivjs.enableWrite`        | `false`     | 데이터 폴더 쓰기 기능을 켠다. 끄면 읽기만 한다.                                                                   |
-| `arxivjs.llm.engine`         | `gemini`    | AI 요약 엔진: `gemini`, `ollama`                                                                                |
+| `arxivjs.llm.engine`         | `gemini`    | AI 요약 엔진: `gemini`, `ollama`, `claude`                                                                      |
 | `arxivjs.gemini.model`       | `gemini-2.5-flash` | Gemini 모델. API 키는 명령 `ArxivJS: Gemini API 키 설정`으로 넣는다(SecretStorage).                         |
 | `arxivjs.ollama.url`         | `http://localhost:11434` | Ollama 서버 주소                                                                                       |
 | `arxivjs.ollama.model`       | `""`        | Ollama 모델 (예: `gemma4:31b`)                                                                                  |
+| `arxivjs.claude.model`       | `claude-opus-5-5` | Claude 모델. API 키는 명령 `ArxivJS: Claude API 키 설정`으로 넣는다(SecretStorage).                           |
+| `arxivjs.claude.workspaceId` | `""`        | 선택. `anthropic-workspace-id` 헤더로 보낸다. 워크스페이스에 묶이지 않은 키에만 필요하다.                      |
 
 ### 명령 목록
 
@@ -222,10 +225,13 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | `ArxivJS: 논문을 다른 주제로 이동` | 논문 파일을 다른 주제로 옮긴다. (쓰기 기능) |
 | `ArxivJS: 논문 삭제`        | 논문 파일을 지운다. (쓰기 기능)              |
 | `ArxivJS: 요약 삭제`        | 요약 문서(.md)와 하이라이트를 지운다. (쓰기 기능) |
-| `ArxivJS: 요약 생성`        | Gemini 또는 Ollama로 논문 요약(.md)을 만든다. (쓰기 기능) |
+| `ArxivJS: 요약 생성`        | Gemini, Claude 또는 Ollama로 논문 요약(.md)을 만든다. (쓰기 기능) |
 | `ArxivJS: 요약 없는 논문 일괄 요약` | 주제에서 요약이 없는 논문을 차례로 요약한다. (쓰기 기능) |
 | `ArxivJS: Gemini API 키 설정` | Gemini API 키를 SecretStorage에 저장한다. |
 | `ArxivJS: Gemini API 키 삭제` | 저장한 Gemini API 키를 지운다. |
+| `ArxivJS: Claude API 키 설정` | Claude API 키를 SecretStorage에 저장한다. |
+| `ArxivJS: Claude API 키 삭제` | 저장한 Claude API 키를 지운다. |
+| `ArxivJS: 요약 프롬프트 열기 (userprompt.txt)` | `userprompt.txt`를 편집기로 연다. 없으면 기본 프롬프트로 만들지 묻는다. (쓰기 기능) |
 
 쓰기 기능 명령은 `arxivjs.enableWrite`가 켜져 있을 때만 보인다.
 
@@ -277,7 +283,7 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 - **확장이 바꾸는 파일**: 주제 폴더, 논문의 `.json`, `.md`, `.txt`, 그리고 이동·삭제할 때의 `.hlt`, `.bak`이다. arxivjs 형식 명세의 작성기 규칙을 따른다. 파일은 임시 파일(`.<이름>.tmp`)에 쓴 뒤 바꿔치기하므로, 쓰는 도중의 파일이 다른 앱에 보이지 않는다.
 - **동시 편집**: 데이터 폴더에는 잠금이 없다. arxivjs 앱이나 다른 VS Code 창이 같은 논문을 동시에 고치면 나중에 쓴 쪽이 남는다. 같은 논문을 두 곳에서 동시에 고치지 않는다.
 - **되돌릴 수 없는 작업**: 논문 삭제, 요약 삭제, 요약 다시 생성은 백업을 남기지 않는다. 그래서 확인 대화상자를 거친다. 데이터 폴더를 git 저장소로 관리하면 `.json`과 `.md`는 git으로 되살릴 수 있다. 기본 `.gitignore`가 `.txt`, `.hlt`, `.bak`은 추적하지 않는다는 점에 주의한다.
-- **AI 요약과 개인정보**: 요약할 때는 논문 전문과 `userprompt.txt`를 고른 엔진에 보낸다. Gemini를 쓰면 Google 서버로 전송된다. 외부로 보내면 안 되는 문서는 로컬 Ollama로 요약한다. Gemini API 키는 OS 자격 증명 저장소(SecretStorage)에만 저장하고, 로그나 설정 파일에는 남기지 않는다.
+- **AI 요약과 개인정보**: 요약할 때는 논문 전문과 `userprompt.txt`를 고른 엔진에 보낸다. Gemini를 쓰면 Google 서버로, Claude를 쓰면 Anthropic 서버로 전송된다. 외부로 보내면 안 되는 문서는 로컬 Ollama로 요약한다. Gemini·Claude API 키는 OS 자격 증명 저장소(SecretStorage)에만 저장하고, 로그나 설정 파일에는 남기지 않는다.
 - **arxivjs 앱과 다른 점**
   - 요약을 다시 만들거나 지울 때 `.bak` 백업을 만들지 않는다. arxivjs 앱은 요약 삭제 시 `.md`를 `.bak`으로 옮긴다.
   - `.json` 없이 `.md`만 있는 항목도 목록에 보여 주지만 편집·이동·삭제는 하지 않는다.
@@ -292,7 +298,7 @@ Command Palette(`Ctrl+Shift+P`)에서 `ArxivJS`로 검색한다.
 | 논문에 "문서 없음"이 표시된다  | 그 논문의 `.md` 파일이 아직 없다. 메타 정보와 초록만 보여준다.                          |
 | 수식 일부가 원문 그대로 보인다 | KaTeX가 지원하지 않는 LaTeX 문법이다. 해당 수식만 원문으로 표시된다.                    |
 | 쓰기 메뉴와 버튼이 안 보인다   | 설정 `arxivjs.enableWrite`를 켠다.                                                      |
-| 요약이 "userprompt.txt" 오류로 시작하지 않는다 | 데이터 폴더에 `userprompt.txt`를 만들고 본문 자리에 `{context}`를 넣는다. |
+| 요약이 "userprompt.txt" 오류로 시작하지 않는다 | 오류 알림의 **userprompt.txt 열기**를 누른다. 파일을 만들지 물으면 만들고, 본문 자리에 `{context}`를 넣는다. |
 | 요약이 PDF 오류로 실패한다     | 논문의 URL과 `source`를 확인한다. 스캔한 이미지 PDF는 텍스트가 없어 요약할 수 없다. 직접 추가한 논문(`manual`)은 `.txt`가 있어야 한다. |
 | Ollama 요약이 앞부분만 다룬다  | Ollama의 문맥 길이(`num_ctx`)가 짧다. Modelfile이나 Ollama 설정에서 늘린다.             |
 | 그 밖의 오류                   | **View → Output**에서 출력 채널 `ArxivJS`의 로그를 확인한다.                            |
@@ -399,7 +405,7 @@ npm run package
 | `name`           | `arxivjs-viewer`                                    | 소문자, 공백 없음                              |
 | `displayName`    | `ArxivJS VSCode Extension`                          | Marketplace에 표시되는 이름                    |
 | `publisher`      | `doosik71`                                          | 게시자 ID. 확장 ID는 `doosik71.arxivjs-viewer` |
-| `version`        | `0.3.0`                                             | SemVer                                         |
+| `version`        | `0.3.2`                                             | SemVer                                         |
 | `engines.vscode` | `^1.90.0`                                           |                                                |
 | `icon`           | `media/icon.png`                                    | 128×128 PNG (`npm run icon`)                   |
 | `repository`     | `https://github.com/doosik71/arxivjs-extension.git` |                                                |
@@ -444,7 +450,7 @@ npx @vscode/vsce login doosik71
 npx @vscode/vsce publish
 ```
 
-- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.0.vsix`로 그 파일을 올릴 수 있다.
+- 이미 만든 `.vsix`가 있으면 `npx @vscode/vsce publish --packagePath arxivjs-viewer-0.3.2.vsix`로 그 파일을 올릴 수 있다.
 - 웹에서 올릴 수도 있다. <https://marketplace.visualstudio.com/manage>에서 게시자를 고르고 **New extension → Visual Studio Code**로 `.vsix`를 업로드한다.
 - 게시 후 검증을 거쳐 몇 분 안에 Marketplace 검색에 나타난다. 확장 ID는 `doosik71.arxivjs-viewer`다.
 
@@ -453,8 +459,8 @@ npx @vscode/vsce publish
 ### 버전 업데이트와 재게시
 
 ```bash
-npx @vscode/vsce publish patch   # 0.3.0 → 0.3.1
-npx @vscode/vsce publish minor   # 0.3.0 → 0.4.0
+npx @vscode/vsce publish patch   # 0.3.2 → 0.3.3
+npx @vscode/vsce publish minor   # 0.3.2 → 0.4.0
 npx @vscode/vsce publish 1.0.0   # 버전 직접 지정
 ```
 
@@ -472,7 +478,7 @@ VSCodium, Cursor 같은 VS Code 호환 에디터 사용자에게도 배포하려
 
 ```bash
 npx ovsx create-namespace doosik71 -p <token>   # 최초 1회
-npx ovsx publish arxivjs-viewer-0.3.0.vsix -p <token>
+npx ovsx publish arxivjs-viewer-0.3.2.vsix -p <token>
 ```
 
 ### 개발 시 주의 사항

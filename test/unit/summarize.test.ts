@@ -6,11 +6,21 @@ import type { Paper, Topic } from '../../src/data/models';
 import { nodeReadonlyFs } from '../../src/data/readonlyFs';
 import type { DataOpsContext } from '../../src/data/topicOps';
 import type { LlmSettings } from '../../src/llm/engine';
-import { buildPrompt, readPromptTemplate, summarizePaper, type SummarizeOptions } from '../../src/llm/summarize';
+import {
+  buildPrompt,
+  createDefaultPrompt,
+  DEFAULT_PROMPT,
+  PromptFileError,
+  promptFileExists,
+  promptFilePath,
+  readPromptTemplate,
+  summarizePaper,
+  type SummarizeOptions,
+} from '../../src/llm/summarize';
 import type { FetchFn } from '../../src/sources/arxiv';
 import { copyFixture, putFile, removeTempFile, type TempData } from './tempData';
 
-const OLLAMA: LlmSettings = { engine: 'ollama', geminiModel: 'g', ollamaUrl: 'http://ollama', ollamaModel: 'm' };
+const OLLAMA: LlmSettings = { engine: 'ollama', geminiModel: 'g', ollamaUrl: 'http://ollama', ollamaModel: 'm', claudeModel: 'c', claudeWorkspaceId: '' };
 
 /** /api/generate는 NDJSON으로, 그 밖(PDF)은 PDF 바이트로 응답하는 가짜 fetch. 받은 프롬프트를 기록한다. */
 function fakeNetwork(answer: string[] | Error) {
@@ -58,8 +68,30 @@ describe('프롬프트', () => {
   it('userprompt.txt가 없거나 {context}가 없으면 알린다', async () => {
     removeTempFile(data, 'userprompt.txt');
     await expect(readPromptTemplate(ctx)).rejects.toThrow(/userprompt\.txt is not in the data folder/);
+    await expect(readPromptTemplate(ctx)).rejects.toThrow(PromptFileError);
     putFile(data, 'userprompt.txt', 'no placeholder');
     await expect(readPromptTemplate(ctx)).rejects.toThrow(/does not contain \{context\}/);
+    await expect(readPromptTemplate(ctx)).rejects.toThrow(PromptFileError);
+  });
+
+  it('없으면 기본 프롬프트로 만들고, 이미 있으면 덮어쓰지 않는다', async () => {
+    removeTempFile(data, 'userprompt.txt');
+    expect(await promptFileExists(ctx)).toBe(false);
+    await createDefaultPrompt(ctx);
+    expect(await promptFileExists(ctx)).toBe(true);
+    expect(readFileSync(promptFilePath(ctx), 'utf8')).toBe(DEFAULT_PROMPT);
+    expect(await readPromptTemplate(ctx)).toBe(DEFAULT_PROMPT); // {context}가 있다.
+
+    putFile(data, 'userprompt.txt', 'mine {context}');
+    await expect(createDefaultPrompt(ctx)).rejects.toThrow(/created by another app/);
+    expect(readFileSync(promptFilePath(ctx), 'utf8')).toBe('mine {context}');
+  });
+
+  it('쓰기 기능이 꺼져 있으면 만들지 않는다', async () => {
+    removeTempFile(data, 'userprompt.txt');
+    const readOnly = { ...ctx, writer: createDataWriter({ root: data.root, isEnabled: () => false }) };
+    await expect(createDefaultPrompt(readOnly)).rejects.toThrow();
+    expect(existsSync(promptFilePath(ctx))).toBe(false);
   });
 });
 

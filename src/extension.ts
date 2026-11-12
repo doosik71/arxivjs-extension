@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { GEMINI_KEY_SECRET } from './commands/summaryCommands';
+import { CLAUDE_KEY_SECRET, GEMINI_KEY_SECRET } from './commands/summaryCommands';
 import { registerWriteCommands } from './commands/writeCommands';
 import { CONFIG_SECTION, readConfig, saveDataFolder, type ArxivjsConfig } from './config';
 import { Library } from './data/library';
@@ -301,6 +301,9 @@ export function activate(context: vscode.ExtensionContext): ArxivjsApi {
           geminiApiKey: await context.secrets.get(GEMINI_KEY_SECRET),
           ollamaUrl: config.ollamaUrl,
           ollamaModel: config.ollamaModel,
+          claudeModel: config.claudeModel,
+          claudeApiKey: await context.secrets.get(CLAUDE_KEY_SECRET),
+          claudeWorkspaceId: config.claudeWorkspaceId,
         }),
         secrets: context.secrets,
         pdfExtractor: () => loadPdfExtractor(context.extensionPath),

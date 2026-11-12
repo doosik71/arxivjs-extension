@@ -19,11 +19,14 @@ export interface ArxivjsConfig {
   openHomeOnStartup: boolean;
   /** 데이터 폴더 쓰기 기능 (기본 false, DEV-PLAN §1.3) */
   enableWrite: boolean;
-  /** 요약 엔진과 모델 (DEV-PLAN §8.1). Gemini API 키는 SecretStorage에 따로 둔다. */
+  /** 요약 엔진과 모델 (DEV-PLAN §8.1). Gemini·Claude API 키는 SecretStorage에 따로 둔다. */
   llmEngine: LlmEngineName;
   geminiModel: string;
   ollamaUrl: string;
   ollamaModel: string;
+  claudeModel: string;
+  /** 워크스페이스에 묶이지 않은 Claude API 키용 (선택) */
+  claudeWorkspaceId: string;
   /** UI 표시 언어 설정값: 'auto' | 'en' | 'ko' (기본 'en'). 실제 언어는 i18n.resolveLanguage로 정한다. */
   language: string;
 }
@@ -31,11 +34,13 @@ export interface ArxivjsConfig {
 export type PaperPanelLocation = 'sameGroup' | 'beside';
 
 const SORTS: readonly PaperSort[] = ['citation', 'year', 'title'];
+const ENGINES: readonly LlmEngineName[] = ['gemini', 'ollama', 'claude'];
 
 export function readConfig(): ArxivjsConfig {
   const c = vscode.workspace.getConfiguration(CONFIG_SECTION);
   const raw = (c.get<string>('dataFolder') ?? '').trim();
   const sort = c.get<string>('paperSort') as PaperSort;
+  const engine = c.get<string>('llm.engine') as LlmEngineName;
   return {
     dataFolder: raw && path.isAbsolute(raw) ? path.normalize(raw) : undefined,
     dataFolderRaw: raw,
@@ -44,10 +49,12 @@ export function readConfig(): ArxivjsConfig {
     paperPanelLocation: c.get<string>('paperPanelLocation') === 'beside' ? 'beside' : 'sameGroup',
     openHomeOnStartup: c.get<boolean>('openHomeOnStartup') ?? true,
     enableWrite: c.get<boolean>('enableWrite') === true,
-    llmEngine: c.get<string>('llm.engine') === 'ollama' ? 'ollama' : 'gemini',
+    llmEngine: ENGINES.includes(engine) ? engine : 'gemini',
     geminiModel: (c.get<string>('gemini.model') ?? '').trim() || 'gemini-2.5-flash',
     ollamaUrl: (c.get<string>('ollama.url') ?? '').trim() || 'http://localhost:11434',
     ollamaModel: (c.get<string>('ollama.model') ?? '').trim(),
+    claudeModel: (c.get<string>('claude.model') ?? '').trim() || 'claude-opus-5-5',
+    claudeWorkspaceId: (c.get<string>('claude.workspaceId') ?? '').trim(),
     language: c.get<string>('language') ?? 'en',
   };
 }

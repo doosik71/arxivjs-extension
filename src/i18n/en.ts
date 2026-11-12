@@ -107,7 +107,7 @@ export const en = {
     toc: 'Contents',
     openOriginal: 'Open Original',
     openLocal: 'Open Local Document',
-    summarizeTitle: 'Create a summary document (.md) with Gemini or Ollama',
+    summarizeTitle: 'Create a summary document (.md) with Gemini, Claude, or Ollama',
     generateSummary: 'Generate Summary',
     regenerateSummary: 'Regenerate Summary',
     editMeta: 'Edit Metadata',
@@ -188,6 +188,13 @@ export const en = {
     ollamaHttp: (status: number, detail: string) => `Ollama request failed (HTTP ${status}): ${detail}`,
     ollamaError: (message: string) => `Ollama error: ${message}`,
     ollamaDisconnected: 'The connection closed before the Ollama response finished.',
+    noClaudeKey: 'No Claude API key. Set one with the "ArxivJS: Set Claude API Key" command.',
+    claudeModelEmpty: 'The arxivjs.claude.model setting is empty.',
+    claudeConnect: 'Could not connect to the Claude API. Check your network connection.',
+    claudeHttp: (status: number, detail: string) => `Claude request failed (HTTP ${status}): ${detail}`,
+    claudeTruncated: 'The Claude response was cut off at the maximum output length, so it was not saved.',
+    claudeRefused: 'Claude declined this request.',
+    promptExists: (file: string) => `${file} was created by another app in the meantime. Open it again.`,
     promptMissing: (file: string, placeholder: string) =>
       `${file} is not in the data folder. Write the summary prompt in this file and put ${placeholder} where the paper text should go.`,
     placeholderMissing: (file: string, placeholder: string) =>
@@ -220,6 +227,7 @@ export const en = {
     deletePaper: 'delete the paper',
     deleteSummary: 'delete the summary document',
     summarize: 'summarize',
+    openPrompt: 'open the summary prompt',
   },
 
   write: {
@@ -306,6 +314,16 @@ export const en = {
     apiKeyWhitespace: 'Contains whitespace.',
     apiKeySaved: 'Saved the Gemini API key.',
     apiKeyCleared: 'Deleted the Gemini API key.',
+    claudeKeyTitle: 'ArxivJS: Set Claude API Key',
+    claudeKeyPrompt:
+      'A key created in the Claude Console (https://platform.claude.com/settings/keys). It is stored in the OS credential store (SecretStorage).',
+    claudeKeySaved: 'Saved the Claude API key.',
+    claudeKeyCleared: 'Deleted the Claude API key.',
+    openPrompt: (file: string) => `Open ${file}`,
+    promptMissingCreate: (file: string) => `The data folder has no ${file}. Create it with the default prompt?`,
+    promptCreateDetail:
+      'The default prompt asks for a Markdown summary in Korean with sections for the problem, contributions, related works, method, results, insights, and TL;DR. The paper text goes where {context} is. You can edit it after it opens.',
+    createPrompt: 'Create',
     alreadyRunning: 'This paper is already being summarized.',
     confirmRegenerate: (title: string) => `Regenerate the summary of paper "${title}"?`,
     regenerateDetail: 'The existing summary (.md) is replaced without a backup. Highlights (.hlt) may not match the new summary.',

@@ -1,11 +1,20 @@
-// AI 요약 명령 (DEV-PLAN §8): Gemini API 키 관리, 논문 요약, 주제 일괄 요약.
+// AI 요약 명령 (DEV-PLAN §8): Gemini·Claude API 키 관리, 요약 프롬프트 열기, 논문 요약, 주제 일괄 요약.
 // 실제 작업은 src/llm/summarize.ts가 한다.
 import * as vscode from 'vscode';
 import type { Topic } from '../data/models';
 import { t } from '../i18n';
 import { LlmError } from '../llm/common';
 import { checkLlmSettings, describeEngine, type LlmSettings } from '../llm/engine';
-import { readPromptTemplate, summarizePaper, type SummaryStage } from '../llm/summarize';
+import {
+  createDefaultPrompt,
+  PROMPT_FILE,
+  PromptFileError,
+  promptFileExists,
+  promptFilePath,
+  readPromptTemplate,
+  summarizePaper,
+  type SummaryStage,
+} from '../llm/summarize';
 import type { FetchFn } from '../sources/arxiv';
 import { FullTextError, type PdfTextExtractor } from '../sources/fullText';
 import type { Logger } from '../util/logger';
@@ -15,6 +24,7 @@ import { writablePaperResolver, type PaperTarget, type WriteHelpers } from './pa
 
 /** SecretStorage 키 이름 (DEV-PLAN §8.2) */
 export const GEMINI_KEY_SECRET = 'arxivjs.gemini.apiKey';
+export const CLAUDE_KEY_SECRET = 'arxivjs.claude.apiKey';
 /** 일괄 요약에서 PDF를 내려받은 뒤 다음 논문까지 기다리는 시간 (arXiv 요청 간격 권고) */
 const ARXIV_DELAY_MS = 3000;
 
@@ -49,10 +59,15 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
     if (problem) {
       const setKey = t().summaryCmd.setApiKey;
       const openSettings = t().common.openSettings;
-      const action = settings.engine === 'gemini' && !settings.geminiApiKey ? setKey : openSettings;
-      const choice = await vscode.window.showWarningMessage(`ArxivJS: ${problem}`, action);
-      if (choice === setKey) {
-        await vscode.commands.executeCommand('arxivjs.setGeminiApiKey');
+      const keyCommand =
+        settings.engine === 'gemini' && !settings.geminiApiKey
+          ? 'arxivjs.setGeminiApiKey'
+          : settings.engine === 'claude' && !settings.claudeApiKey
+            ? 'arxivjs.setClaudeApiKey'
+            : undefined;
+      const choice = await vscode.window.showWarningMessage(`ArxivJS: ${problem}`, keyCommand ? setKey : openSettings);
+      if (choice === setKey && keyCommand) {
+        await vscode.commands.executeCommand(keyCommand);
       } else if (choice === openSettings) {
         await vscode.commands.executeCommand('workbench.action.openSettings', 'arxivjs.llm');
       }
@@ -61,9 +76,46 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
     return settings;
   };
 
+  /** API 키 저장·삭제 명령 한 쌍. 키 값은 SecretStorage에만 두고 로그에 남기지 않는다. */
+  const apiKeyCommands = (
+    engine: string,
+    setId: string,
+    clearId: string,
+    secret: string,
+    texts: () => { title: string; prompt: string; saved: string; cleared: string },
+  ): vscode.Disposable[] => [
+    vscode.commands.registerCommand(setId, async () => {
+      const key = await vscode.window.showInputBox({
+        title: texts().title,
+        prompt: texts().prompt,
+        password: true,
+        ignoreFocusOut: true,
+        validateInput: (v) => (/\s/.test(v.trim()) ? t().summaryCmd.apiKeyWhitespace : undefined),
+      });
+      if (!key?.trim()) {
+        return;
+      }
+      await host.secrets.store(secret, key.trim());
+      log.info(`Saved the ${engine} API key.`);
+      void vscode.window.showInformationMessage(`ArxivJS: ${texts().saved}`);
+    }),
+    vscode.commands.registerCommand(clearId, async () => {
+      await host.secrets.delete(secret);
+      log.info(`Deleted the ${engine} API key.`);
+      void vscode.window.showInformationMessage(`ArxivJS: ${texts().cleared}`);
+    }),
+  ];
+
   /** 사용자에게 보일 이유가 있는 오류(LLM, 전문 텍스트)는 그대로, 나머지는 공용 처리 */
   const reportSummaryError = (title: string, err: unknown) => {
-    if (err instanceof LlmError || err instanceof FullTextError) {
+    if (err instanceof PromptFileError) {
+      // 프롬프트 파일 문제는 바로 고칠 수 있게 여는 버튼을 붙인다.
+      log.error(`Summary failed: ${title} — ${err.message}`);
+      const open = t().summaryCmd.openPrompt(PROMPT_FILE);
+      void vscode.window
+        .showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`, open)
+        .then((choice) => choice === open && vscode.commands.executeCommand('arxivjs.openPromptFile'));
+    } else if (err instanceof LlmError || err instanceof FullTextError) {
       log.error(`Summary failed: ${title} — ${err.message}`);
       void vscode.window.showErrorMessage(`ArxivJS: ${t().summaryCmd.failed(err.message)}`);
     } else {
@@ -72,26 +124,39 @@ export function registerSummaryCommands(host: SummaryCommandHost, helpers: Write
   };
 
   return [
-    vscode.commands.registerCommand('arxivjs.setGeminiApiKey', async () => {
-      const key = await vscode.window.showInputBox({
-        title: t().summaryCmd.apiKeyTitle,
-        prompt: t().summaryCmd.apiKeyPrompt,
-        password: true,
-        ignoreFocusOut: true,
-        validateInput: (v) => (/\s/.test(v.trim()) ? t().summaryCmd.apiKeyWhitespace : undefined),
-      });
-      if (!key?.trim()) {
-        return;
-      }
-      await host.secrets.store(GEMINI_KEY_SECRET, key.trim());
-      log.info('Saved the Gemini API key.'); // 키 값은 기록하지 않는다.
-      void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.apiKeySaved}`);
+    ...apiKeyCommands('Gemini', 'arxivjs.setGeminiApiKey', 'arxivjs.clearGeminiApiKey', GEMINI_KEY_SECRET, () => {
+      const m = t().summaryCmd;
+      return { title: m.apiKeyTitle, prompt: m.apiKeyPrompt, saved: m.apiKeySaved, cleared: m.apiKeyCleared };
+    }),
+    ...apiKeyCommands('Claude', 'arxivjs.setClaudeApiKey', 'arxivjs.clearClaudeApiKey', CLAUDE_KEY_SECRET, () => {
+      const m = t().summaryCmd;
+      return { title: m.claudeKeyTitle, prompt: m.claudeKeyPrompt, saved: m.claudeKeySaved, cleared: m.claudeKeyCleared };
     }),
 
-    vscode.commands.registerCommand('arxivjs.clearGeminiApiKey', async () => {
-      await host.secrets.delete(GEMINI_KEY_SECRET);
-      log.info('Deleted the Gemini API key.');
-      void vscode.window.showInformationMessage(`ArxivJS: ${t().summaryCmd.apiKeyCleared}`);
+    // 요약 프롬프트(userprompt.txt)를 편집기로 연다. 쓰기 기능이 켜져 있을 때만 연다.
+    vscode.commands.registerCommand('arxivjs.openPromptFile', async () => {
+      const library = writableLibrary();
+      if (!library) {
+        return;
+      }
+      try {
+        if (!(await promptFileExists(library.ops))) {
+          const m = t().summaryCmd;
+          const choice = await vscode.window.showWarningMessage(
+            m.promptMissingCreate(PROMPT_FILE),
+            { modal: true, detail: m.promptCreateDetail },
+            m.createPrompt,
+          );
+          if (choice !== m.createPrompt) {
+            return;
+          }
+          await createDefaultPrompt(library.ops);
+          log.info(`Created ${PROMPT_FILE} with the default prompt.`);
+        }
+        await vscode.window.showTextDocument(vscode.Uri.file(promptFilePath(library.ops)));
+      } catch (err) {
+        reportError((msg) => msg.action.openPrompt, err);
+      }
     }),
 
     vscode.commands.registerCommand('arxivjs.summarizePaper', async (arg?: unknown) => {
